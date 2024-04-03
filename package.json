@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "geo-tz": "^8.0.2",
+    "luxon": "^3.4.4"
+  },
+  "type": "module"
+}
