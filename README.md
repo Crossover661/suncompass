@@ -1,2 +1,2 @@
 # suncompass
-Website which shows times of sunrise, sunset, twilight, moonrise, moonset, solar and lunar eclipses, and the quantity of solar radiation received in different locations on Earth.
+Website which calculates the times of sunrise, sunset, dawn, dusk, solar noon, and solar midnight; the subsolar point (point on Earth at which the sun is directly overhead), solar noon, and solar midnight.
