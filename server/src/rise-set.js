@@ -16,9 +16,12 @@ else if (args.length == 4) { // Accepts coordinates. Example: "node rise-set 38.
     date = DateTime.now().setZone(zone);
 }
 else if (args.length == 5) {
-    // Coordinates and date. Example: "node rise-set 38.9 -77.02 2024-06-20" gives times for June 20, 2024 in Washington, D.C. in EDT
-    // The date argument can be replaced with "me" for March equinox, "js" for June solstice, "se" for Sep equinox, "ds" for Dec solstice
-    // The specific time can also be specified in the date. Example: "2024-05-23T19:44:17" = May 23, 2024 at 7:44:17 PM. Time must be specified in 24-hour format.
+    /* Coordinates and date. Example: "node rise-set 38.9 -77.02 2024-06-20" gives times for June 20, 2024 in Washington, D.C. in EDT
+    The date argument can be replaced with "me" for March equinox, "js" for June solstice, "se" for Sep equinox, "ds" for Dec solstice
+    The specific time can also be specified in the date. Examples:
+    "2022-02-22T02:22:22" --> February 22, 2022 at 2:22:22 AM
+    "2024-12-25T19:12:06" --> December 25, 2024 at 7:12:06 PM
+    */
     var [lat, long] = [Number(args[2]), Number(args[3])];
     zone = find(lat, long)[0];
     var curYear = DateTime.now().setZone(zone).year;

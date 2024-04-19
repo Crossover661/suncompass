@@ -101,6 +101,8 @@ function solarNoon(longitude: number, date: DateTime) {
 function solarMidnight(longitude: number, date: DateTime) {
     // Returns the time of solar midnight as a DateTime object, given the longitude and a DateTime representing a given date.
     // The function returns the time of solar midnight on the previous night. For example, if the date is July 4, the value returned is on the night between July 3 and July 4.
+
+    // The "minus(1)" in the formula for midnight below sets the time to 23:59:59.999 on the previous day. This is required because some countries, such as Lebanon, institute DST changes at midnight, so the day may actually start at 01:00:00.
     var midnight = DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 0}, {zone: date.zone}).minus(1);
     var offset = midnight.offset / 60;
 
