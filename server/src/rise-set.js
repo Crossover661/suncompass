@@ -51,12 +51,8 @@ console.log("Current sun azimuth: " + az.toFixed(4) + "° (" + direction(az) + "
 console.log("Subsolar point: " + subsolarPoint[0].toFixed(4) + ", " + subsolarPoint[1].toFixed(4));
 console.log();
 
-console.log("Sunrise: " + displayTime(sunrise));
-console.log("Solar noon: " + displayTime(solarNoon));
-console.log("Sunset: " + displayTime(sunset));
-console.log("Day length: " + displayDuration(dayLength));
+console.log("Sunrise: " + sunrise.toFormat("LL-dd hh:mm:ss a"));
+console.log("Solar noon: " + solarNoon.toFormat("LL-dd hh:mm:ss a"));
+console.log("Sunset: " + sunset.toFormat("LL-dd hh:mm:ss a"));
+console.log("Day length: " + Math.floor(dayLength/3600) + ":" + Math.floor((dayLength%3600)/60) + ":" + Math.floor(dayLength%60));
 console.log();
-
-console.log("Civil dawn/dusk: " + displayTime(dawn[0]) + ", " + displayTime(dusk[0]));
-console.log("Nautical dawn/dusk: " + displayTime(dawn[1]) + ", " + displayTime(dusk[1]));
-console.log("Astronomical dawn/dusk: " + displayTime(dawn[2]) + ", " + displayTime(dusk[2]));
