@@ -1,6 +1,7 @@
-import {degToRad, clamp, mod, JDNdate, mins, julianCentury} from "./mathfuncs.js";
+import {clamp, mod, JDNdate, mins, julianCentury} from "./mathfuncs.js";
 import {meanSunAnomaly} from "./suncalc.js";
 import {DateTime} from "luxon";
+import {degToRad} from "./constants.js";
 
 function moonMeanLongitude(JC: number) {
     return 218.3164477 + 481267.88123421*JC - 0.0015786*JC**2 + JC**3/538841 - JC**4/65194000; 

@@ -1,19 +1,18 @@
 import {DateTime} from "luxon";
 import {find} from "geo-tz";
-import {marEquinox, junSolstice, sepEquinox, decSolstice, subsolarPoint} from "./suncalc.js";
+import {marEquinox, junSolstice, sepEquinox, decSolstice, subsolarPoint, solstEq} from "./suncalc.js";
 
-var [lat, long] = [0,0];
 var year;
-var zone = find(lat, long)[0];
-console.log(zone);
+var zone = "utc";
 
 var args = process.argv;
 if (args.length == 2) {year = DateTime.now().year;}
 else {year = args[2];}
-var mar = marEquinox(year, zone);
-var jun = junSolstice(year, zone);
-var sep = sepEquinox(year, zone);
-var dec = decSolstice(year, zone);
+var dates = solstEq(year, true);
+var mar = dates.marEquinox;
+var jun = dates.junSolstice;
+var sep = dates.sepEquinox;
+var dec = dates.decSolstice;
 var marSSP = subsolarPoint(mar);
 var junSSP = subsolarPoint(jun);
 var sepSSP = subsolarPoint(sep);
