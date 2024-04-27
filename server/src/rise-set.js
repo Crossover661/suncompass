@@ -29,11 +29,7 @@ else if (args.length == 5) {
     else if (args[4] == "js") {date = suncalc.junSolstice(curYear, zone);}
     else if (args[4] == "se") {date = suncalc.sepEquinox(curYear, zone);}
     else if (args[4] == "ds") {date = suncalc.decSolstice(curYear, zone);}
-    else if (Number(args[4].slice(0,4)) >= 1935) {date = DateTime.fromISO(args[4], {zone: zone});}
-    else {
-        zone = suncalc.meanSolarTimeOffset(long);
-        date = DateTime.fromISO(args[4], {zone: zone});
-    }
+    else {date = DateTime.fromISO(args[4], {zone: zone});}
 }
 else {
     console.log("Invalid argument");
