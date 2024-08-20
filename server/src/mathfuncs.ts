@@ -31,7 +31,7 @@ function JDNdate(date: DateTime) {
     var month = date.month;
     var day = date.day;
     var time = mins(date);
-    var timezone = date.offset /60;
+    var timezone = date.offset/60;
     return JDN(year,month,day,time,timezone);
 }
 
@@ -74,7 +74,10 @@ function displayDuration(duration: any) {
 }
 
 function approxDeltaT(JC: number) {
-    // Expressions derived from https://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html. The formula has an error of roughly +4.8 seconds in 2024 (73.8 seconds vs actual value of 69 seconds). The margin of error increases for years beyond 2050.
+    /* This function finds the approximate value of delta T, the difference between terrestrial time (recorded by atomic clocks)
+    and mean solar time (based on the Earth's rotation). This function's margin of error is 4.8 seconds in 2024, based on the
+    value this function returns (73.8 seconds) versus the real value (69 seconds). The margin of error increases for years before
+    1800 and after 2100, as the Earth's rotation varies unpredictably.*/
     var y = 100*JC+2000;
     if (y < 500) {
         var u = y/100;
