@@ -20,10 +20,12 @@ import { clamp, mod, JDNdate, mins, julianCentury, approxDeltaT } from "./mathfu
 import { DateTime } from "luxon";
 import { degToRad, sunPeriodicTerms } from "./constants.js";
 import * as fs from "fs";
+const N_POLAR_NIGHT = 2 ** 52 - 1;
+const N_MIDNIGHT_SUN = 2 ** 52 + 1;
 function meanSunLongitude(JC) {
     JC += (approxDeltaT(JC) / 3155760000); // division by 3155760000 converts seconds to Julian centuries
     var U = JC / 100;
-    var meanLong = 4.9353929 + 62833.1961680 * U;
+    var meanLong = 4.9353929 + 62833.196168 * U;
     for (var i = 0; i < 50; i++) {
         var curRow = sunPeriodicTerms[i];
         meanLong += (1e-7 * (curRow[0] * Math.sin(curRow[2] + curRow[3] * U)));
@@ -195,86 +197,10 @@ function refract(elev) {
     // Adjusts the solar elevation angle to account for refraction of sunlight.
     return elev + refraction(elev);
 }
-function highestSunAngle(lat, long, date) {
-    /* This calculates the approximate time at which the sun reaches its highest angle. At extreme latitudes, in particular within about 2 degrees of the poles, peak
-    sun elevation can occur significantly after or before solar noon, depending on the time of year and proximity to the pole. At these latitudes, the earth's rotation
-    speed is slow enough that the change in the sun's declination during a day is significant. Sunrise/dawn can occur after solar noon and sunset/dusk can occur before
-    solar noon. For example, on March 17, 2024 at coordinates (89.8, 0.0), sunrise occurred at 12:22:43 and sunset at 14:22:02, even though solar noon was at 12:08:10
-    (all times UTC). At the poles themselves, peak solar elevation occurs either at the end of the day or the beginning of the day, except on the solstices.
-    
-    Both this function and the sister function lowestSunAngle are used as helper functions for the dawn and dusk functions. The return value of this function is the
-    same as solarNoon if the latitude is between -88 and 88. */
-    if (Math.abs(lat) < 88) {
-        return solarNoon(long, date);
-    }
-    else {
-        var noon = solarNoon(long, date);
-        var prevMidnight = solarMidnight(long, date);
-        var nextMidnight = solarMidnight(long, date.plus({ days: 1 }));
-        var noonEL = sunAppLongitude(noon);
-        if ((lat > 0 && (noonEL > 270 || noonEL < 90)) || (lat < 0 && noonEL >= 90 && noonEL <= 270)) {
-            // if the time of year is between the winter solstice and the summer solstice (the "rising-sun" period of the year)
-            // highest sun elevation occurs after solar noon
-            var cur = sunPosition(lat, long, noon);
-            var next = sunPosition(lat, long, noon.plus({ minutes: 5 }));
-            while (noon < nextMidnight && next[0] > cur[0]) {
-                noon = noon.plus({ minutes: 5 });
-                cur = sunPosition(lat, long, noon);
-                next = sunPosition(lat, long, noon.plus({ minutes: 5 }));
-            }
-        }
-        else {
-            // if the time of year is between the summer solstice and the winter solstice (the "falling-sun" period of the year)
-            // highest sun elevation occurs before solar noon
-            var cur = sunPosition(lat, long, noon);
-            var next = sunPosition(lat, long, noon.minus({ minutes: 5 }));
-            while (noon > prevMidnight && next[0] > cur[0]) {
-                noon = noon.minus({ minutes: 5 });
-                cur = sunPosition(lat, long, noon);
-                next = sunPosition(lat, long, noon.minus({ minutes: 5 }));
-            }
-        }
-        return noon;
-    }
-}
-function lowestSunAngle(lat, long, date) {
-    if (Math.abs(lat) < 88) {
-        return solarMidnight(long, date);
-    }
-    else {
-        var midnight = solarMidnight(long, date);
-        var prevNoon = solarNoon(long, date.minus({ days: 1 }));
-        var nextNoon = solarNoon(long, date);
-        var midnightEL = sunAppLongitude(midnight);
-        if ((lat > 0 && (midnightEL > 270 || midnightEL < 90)) || (lat < 0 && midnightEL >= 90 && midnightEL <= 270)) {
-            // if the time of year is between the winter solstice and the summer solstice (the "rising-sun" period of the year)
-            // lowest sun elevation occurs before solar midnight
-            var cur = sunPosition(lat, long, midnight);
-            var next = sunPosition(lat, long, midnight.minus({ minutes: 5 }));
-            while (midnight > prevNoon && next[0] < cur[0]) {
-                midnight = midnight.minus({ minutes: 5 });
-                cur = sunPosition(lat, long, midnight);
-                next = sunPosition(lat, long, midnight.minus({ minutes: 5 }));
-            }
-        }
-        else {
-            // if the time of year is between the summer solstice and the winter solstice (the "falling-sun" period of the year)
-            // lowest sun elevation occurs after solar midnight
-            var cur = sunPosition(lat, long, midnight);
-            var next = sunPosition(lat, long, midnight.plus({ minutes: 5 }));
-            while (midnight < nextNoon && next[0] < cur[0]) {
-                midnight = midnight.plus({ minutes: 5 });
-                cur = sunPosition(lat, long, midnight);
-                next = sunPosition(lat, long, midnight.plus({ minutes: 5 }));
-            }
-        }
-        return midnight;
-    }
-}
 function dawn(lat, long, date, angle) {
     // Calculates the time in the morning at which the sun's elevation reaches the specified angle
-    var midnight = lowestSunAngle(lat, long, date);
-    var noon = highestSunAngle(lat, long, date);
+    var midnight = solarMidnight(long, date);
+    var noon = solarNoon(long, date);
     var dawn;
     if (Math.abs(lat) <= 88 - Math.abs(declination(noon)) - Math.abs(angle)) { // calculate based on the sunrise equation
         var interval = noon.diff(midnight).as("milliseconds");
@@ -289,14 +215,11 @@ function dawn(lat, long, date, angle) {
     }
     else { // if the sun is in or near the circumpolar circle, the sunrise equation may break down, so use binary search instead
         if (sunPosition(lat, long, noon)[0] <= angle) {
-            return DateTime.fromMillis(2 ** 52 - 1);
+            return DateTime.fromMillis(N_POLAR_NIGHT);
         } // polar night
         else if (sunPosition(lat, long, midnight)[0] >= angle) {
-            return DateTime.fromMillis(2 ** 52 + 1);
+            return DateTime.fromMillis(N_MIDNIGHT_SUN);
         } // midnight sun
-        else if (midnight > noon) {
-            return DateTime.fromMillis(2 ** 52);
-        } // In this case, there cannot be a sunrise. This occurs at the poles around the fall equinox when the sun sets.
         dawn = midnight;
         var t1 = 0;
         var t2 = noon.diff(midnight).as("milliseconds");
@@ -316,8 +239,8 @@ function dawn(lat, long, date, angle) {
 }
 function dusk(lat, long, date, angle) {
     // Calculates the time in the evening at which the sun's elevation reaches the specified angle
-    var noon = highestSunAngle(lat, long, date);
-    var midnight = lowestSunAngle(lat, long, date.plus({ days: 1 }));
+    var noon = solarNoon(long, date);
+    var midnight = solarMidnight(long, date.plus({ days: 1 }));
     var dusk;
     if (Math.abs(lat) <= 88 - Math.abs(declination(noon)) - Math.abs(angle)) {
         var interval = midnight.diff(noon).as("milliseconds");
@@ -333,14 +256,11 @@ function dusk(lat, long, date, angle) {
     }
     else {
         if (sunPosition(lat, long, noon)[0] <= angle) {
-            return DateTime.fromMillis(2 ** 52 - 1);
+            return DateTime.fromMillis(N_POLAR_NIGHT);
         } // polar night
         else if (sunPosition(lat, long, midnight)[0] >= angle) {
-            return DateTime.fromMillis(2 ** 52 + 1);
+            return DateTime.fromMillis(N_MIDNIGHT_SUN);
         } // midnight sun
-        else if (noon > midnight) {
-            return DateTime.fromMillis(2 ** 52);
-        }
         dusk = noon;
         var t1 = 0;
         var t2 = midnight.diff(noon).as("milliseconds");

@@ -1,12 +1,22 @@
 const degToRad = Math.PI / 180;
 function intDiv(x, y) {
-    if (x < 0) {return Math.ceil(x / y);}
-    else {return Math.floor(x / y);}
+    if (x < 0) {
+        return Math.ceil(x / y);
+    }
+    else {
+        return Math.floor(x / y);
+    }
 }
 function clamp(x) {
-    if (x <= -1) {return -1;}
-    else if (x >= 1) {return 1;}
-    else {return x;}
+    if (x <= -1) {
+        return -1;
+    }
+    else if (x >= 1) {
+        return 1;
+    }
+    else {
+        return x;
+    }
 }
 function mod(x, y) { return ((x % y) + y) % y; } // mod function, but output is always in the range [0, y)
 function JD(y, m, d) {
@@ -27,44 +37,97 @@ function JDNdate(date) {
 }
 function julianCentury(JDN) { return (JDN - 2451545) / 36525; }
 function direction(bearing) {
-    if (bearing < 0 || bearing >= 360) {bearing = mod(bearing, 360);}
-    if (bearing < 11.25) {return "N";}
-    else if (bearing < 33.75) {return "NNE";}
-    else if (bearing < 56.25) {return "NE";}
-    else if (bearing < 78.75) {return "ENE";}
-    else if (bearing < 101.25) {return "E";}
-    else if (bearing < 123.75) {return "ESE";}
-    else if (bearing < 146.25) {return "SE";}
-    else if (bearing < 168.75) {return "SSE";}
-    else if (bearing < 191.25) {return "S";}
-    else if (bearing < 213.75) {return "SSW";}
-    else if (bearing < 236.25) {return "SW";}
-    else if (bearing < 258.75) {return "WSW";}
-    else if (bearing < 281.25) {return "W";}
-    else if (bearing < 303.75) {return "WNW";}
-    else if (bearing < 326.25) {return "NW";}
-    else if (bearing < 348.75) {return "NNW";}
-    else {return "N";}
+    if (bearing < 0 || bearing >= 360) {
+        bearing = mod(bearing, 360);
+    }
+    if (bearing < 11.25) {
+        return "N";
+    }
+    else if (bearing < 33.75) {
+        return "NNE";
+    }
+    else if (bearing < 56.25) {
+        return "NE";
+    }
+    else if (bearing < 78.75) {
+        return "ENE";
+    }
+    else if (bearing < 101.25) {
+        return "E";
+    }
+    else if (bearing < 123.75) {
+        return "ESE";
+    }
+    else if (bearing < 146.25) {
+        return "SE";
+    }
+    else if (bearing < 168.75) {
+        return "SSE";
+    }
+    else if (bearing < 191.25) {
+        return "S";
+    }
+    else if (bearing < 213.75) {
+        return "SSW";
+    }
+    else if (bearing < 236.25) {
+        return "SW";
+    }
+    else if (bearing < 258.75) {
+        return "WSW";
+    }
+    else if (bearing < 281.25) {
+        return "W";
+    }
+    else if (bearing < 303.75) {
+        return "WNW";
+    }
+    else if (bearing < 326.25) {
+        return "NW";
+    }
+    else if (bearing < 348.75) {
+        return "NNW";
+    }
+    else {
+        return "N";
+    }
 }
 function displayTime(date, format = 12) {
-    if (date == Number.POSITIVE_INFINITY) {return "∞";}
-    else if (date == Number.NEGATIVE_INFINITY) {return "-∞";}
-    else if (isNaN(date)) {return NaN;}
-    else if (format == 12) {return date.toFormat("h:mm:ss a");}
-    else {return date.toFormat("HH:mm:ss");}
+    if (date == Number.POSITIVE_INFINITY) {
+        return "∞";
+    }
+    else if (date == Number.NEGATIVE_INFINITY) {
+        return "-∞";
+    }
+    else if (isNaN(date)) {
+        return NaN;
+    }
+    else if (format == 12) {
+        return date.toFormat("h:mm:ss a");
+    }
+    else {
+        return date.toFormat("HH:mm:ss");
+    }
 }
 function displayDuration(duration) {
-    if (duration == Number.POSITIVE_INFINITY) {return "∞";}
-    else if (duration == Number.NEGATIVE_INFINITY) {return "-∞";}
-    else if (isNaN(duration)) {return NaN;}
-    else {return duration.toFormat("h:mm:ss");}
+    if (duration == Number.POSITIVE_INFINITY) {
+        return "∞";
+    }
+    else if (duration == Number.NEGATIVE_INFINITY) {
+        return "-∞";
+    }
+    else if (isNaN(duration)) {
+        return NaN;
+    }
+    else {
+        return duration.toFormat("h:mm:ss");
+    }
 }
 function approxDeltaT(JC) {
     /* This function finds the approximate value of delta T, the difference between terrestrial time (recorded by atomic clocks)
     and mean solar time (based on the Earth's rotation). This function's margin of error is 4.8 seconds in 2024, based on the
     value this function returns (73.8 seconds) versus the real value (69 seconds). The margin of error increases for years before
-    1800 and after 2100, as the Earth's rotation varies unpredictably.
-    */
+    1800 and after 2100, as the Earth's rotation varies unpredictably.*/
     var y = 100 * JC + 2000;
     if (y < 500) {
         var u = y / 100;
