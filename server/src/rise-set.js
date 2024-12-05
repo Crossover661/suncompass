@@ -1,7 +1,7 @@
 import { DateTime, Duration } from "luxon";
 import {find} from "geo-tz";
 import * as suncalc from "./suncalc.js";
-import {direction, displayTime, displayDuration} from "./mathfuncs.js";
+import {direction} from "./mathfuncs.js";
 
 var args = process.argv;
 var zone, date;

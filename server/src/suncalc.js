@@ -40,18 +40,18 @@ function equationOfCenter(JC) {
         (0.019993 - 0.000101 * JC) * Math.sin(2 * anom) +
         0.000289 * Math.sin(3 * anom);
 }
-function sunTrueAnomaly(JC) { return meanSunAnomaly(JC) + equationOfCenter(JC); }
+function sunAnomaly(JC) { return meanSunAnomaly(JC) + equationOfCenter(JC); }
 function sunDistance(date) {
     if (typeof (date) == "number") {
         var ecc = eccentricity(date);
-        return (149598023 * (1 - ecc ** 2)) / (1 + ecc * Math.cos(sunTrueAnomaly(date) * degToRad));
+        return (149598023 * (1 - ecc ** 2)) / (1 + ecc * Math.cos(sunAnomaly(date) * degToRad));
     }
     else {
         var JC = julianCentury(JDNdate(date));
         return sunDistance(JC);
     }
 }
-function sunAppLongitude(date) {
+function sunLongitude(date) {
     // Calculates the sun's apparent ecliptic longitude to within 0.0009 degrees for years 0 through 3000.
     // This value is 0 at the March equinox, 90 at the June solstice, 180 at the September equinox, and 270 at the December solstice.
     // Note that in future years (beyond 2200 or so), the value may end up being in error by minutes due to unpredictable values of delta T.
@@ -64,7 +64,7 @@ function sunAppLongitude(date) {
         return mod((meanLong + aberration + nutation) / degToRad, 360);
     }
     else {
-        return sunAppLongitude(julianCentury(JDNdate(date)));
+        return sunLongitude(julianCentury(JDNdate(date)));
     }
 }
 function axialTilt(date) {
@@ -78,7 +78,7 @@ function axialTilt(date) {
 }
 function declination(date) {
     if (typeof (date) == "number") {
-        return Math.asin(clamp(Math.sin(axialTilt(date) * degToRad) * Math.sin(sunAppLongitude(date) * degToRad))) / degToRad;
+        return Math.asin(clamp(Math.sin(axialTilt(date) * degToRad) * Math.sin(sunLongitude(date) * degToRad))) / degToRad;
     }
     else {
         return declination(julianCentury(JDNdate(date)));
@@ -317,7 +317,7 @@ function marEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
     var t2 = 8 * 86400 * 1000;
     while (t2 - t1 >= 1) {
         date = start.plus((t1 + t2) / 2);
-        long = sunAppLongitude(date);
+        long = sunLongitude(date);
         if (long >= 180) {
             t1 = (t1 + t2) / 2;
         }
@@ -336,7 +336,7 @@ function junSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
     var t2 = 8 * 86400 * 1000;
     while (t2 - t1 >= 1) {
         date = start.plus((t1 + t2) / 2);
-        long = sunAppLongitude(date);
+        long = sunLongitude(date);
         if (long <= 90) {
             t1 = (t1 + t2) / 2;
         }
@@ -355,7 +355,7 @@ function sepEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
     var t2 = 8 * 86400 * 1000;
     while (t2 - t1 >= 1) {
         date = start.plus((t1 + t2) / 2);
-        long = sunAppLongitude(date);
+        long = sunLongitude(date);
         if (long <= 180) {
             t1 = (t1 + t2) / 2;
         }
@@ -374,7 +374,7 @@ function decSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
     var t2 = 8 * 86400 * 1000;
     while (t2 - t1 >= 1) {
         date = start.plus((t1 + t2) / 2);
-        long = sunAppLongitude(date);
+        long = sunLongitude(date);
         if (long <= 270) {
             t1 = (t1 + t2) / 2;
         }
@@ -416,4 +416,4 @@ function solstEq(year, zone = "utc") {
         decSolstice: DateTime.fromISO(obj.decSolstice).setZone(zone)
     };
 }
-export { sunDistance, sunAppLongitude, axialTilt, declination, equationOfTime, meanSunAnomaly, sunAngularRadius, meanSolarTimeOffset, solarTime, solarNoon, solarMidnight, subsolarPoint, sunPosition, refraction, refract, dawn, dusk, sunrise, sunset, civilDawn, civilDusk, nauticalDawn, nauticalDusk, astroDawn, astroDusk, dayLength, marEquinox, junSolstice, sepEquinox, decSolstice, solstEq };
+export { sunDistance, sunLongitude, axialTilt, declination, equationOfTime, meanSunAnomaly, sunAngularRadius, meanSolarTimeOffset, solarTime, solarNoon, solarMidnight, subsolarPoint, sunPosition, refraction, refract, dawn, dusk, sunrise, sunset, civilDawn, civilDusk, nauticalDawn, nauticalDusk, astroDawn, astroDusk, dayLength, marEquinox, junSolstice, sepEquinox, decSolstice, solstEq };
