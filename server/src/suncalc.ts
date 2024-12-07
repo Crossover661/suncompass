@@ -254,6 +254,18 @@ function dusk(lat: number, long: number, date: DateTime, angle: number): DateTim
     return dusk;
 }
 
+function polarDawn(lat: number, long: number, date: DateTime, angle: number): DateTime {
+    // polarDawn and polarDusk are used for extreme latitudes, above 85 degrees, where solar elevation angle depends increasingly on 
+    // declination, rather than solar time. As a result, sunrise may occur after solar noon, or sunset before solar noon.
+    return DateTime.fromMillis(0); // placeholder
+}
+
+function polarDusk(lat: number, long: number, date: DateTime, angle: number): DateTime {
+    // polarDawn and polarDusk are used for extreme latitudes, above 85 degrees, where solar elevation angle depends increasingly on 
+    // declination, rather than solar time. As a result, sunrise may occur after solar noon, or sunset before solar noon.
+    return DateTime.fromMillis(0); // placeholder
+}
+
 function sunrise(lat: number, long: number, date: DateTime) {return dawn(lat, long, date, -5/6);} 
 function sunset(lat: number, long: number, date: DateTime) {return dusk(lat, long, date, -5/6);}
 function civilDawn(lat: number, long: number, date: DateTime) {return dawn(lat, long, date, -6);}
@@ -342,35 +354,20 @@ function decSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
     return date.setZone(timezone);
 }
 
-function solstEq(year: number, zone = "utc") {
-    /* Returns the dates of solstices and equinoxes as a JSON object as follows:
-    {year: 2024,
-    marEquinox: "2024-03-20T03:06:17.077Z",
-    junSolstice: "2024-06-20T20:50:58.192Z",
-    sepEquinox: "2024-09-22T12:43:36.934Z",
-    decSolstice: "2024-12-21T09:20:09.055Z"}
-
-    The values are sourced directly from the file solstices_equinoxes.json, allowing for quick queries of said values, rather than
-    the computationally intensive task of calculating them using binary search and the ecliptic longitude function.
-
-    If convertToDates is set to true, the values of marEquinox, junSolstice, sepEquinox, and decSolstice are set to DateTime objects, 
-    rather than ISO 8601 strings.
-
-    If zone is set to a value other than UTC, the DateTime objects are converted to the zone in question. For example, if zone is
-    set to "America/Los_Angeles", the function returns DateTime objects in Pacific Standard Time (for the December solstice) and
-    Pacific Daylight Time (for the June solstice and both equinoxes).
-    */
+function getSolsticeEquinox(year: number, month: number, zone = "utc") {
+    // This file queries solstice and equinox times from a JSON file.
     const data = fs.readFileSync("./solstices_equinoxes.json", "utf8");
     const array = JSON.parse(data);
     var n = year - array[0].year;
-    if (n < 0 || n >= array.length) {throw new Error("Index out of bounds.");}
-    var obj = array[n];
-    return {
-        marEquinox: DateTime.fromISO(obj.marEquinox).setZone(zone),
-        junSolstice: DateTime.fromISO(obj.junSolstice).setZone(zone),
-        sepEquinox: DateTime.fromISO(obj.sepEquinox).setZone(zone),
-        decSolstice: DateTime.fromISO(obj.decSolstice).setZone(zone)
-    };
+    if (n < 0 || n >= array.length) {throw new Error("Index out of bounds");}
+    else if (month == 3) {return DateTime.fromISO(array[n].marEquinox).setZone(zone);}
+    else if (month == 6) {return DateTime.fromISO(array[n].junSolstice).setZone(zone);}
+    else if (month == 9) {return DateTime.fromISO(array[n].sepEquinox).setZone(zone);}
+    else if (month == 12) {return DateTime.fromISO(array[n].decSolstice).setZone(zone);}
+    else {
+        console.log("Month must be 3, 6, 9, or 12");
+        return DateTime.fromMillis(2**52);
+    }
 }
 
-export {sunDistance, sunLongitude, axialTilt, declination, equationOfTime, meanSunAnomaly, sunAngularRadius, meanSolarTimeOffset, solarTime, solarNoon, solarMidnight, subsolarPoint, sunPosition, refraction, refract, dawn, dusk, sunrise, sunset, civilDawn, civilDusk, nauticalDawn, nauticalDusk, astroDawn, astroDusk, dayLength, marEquinox, junSolstice, sepEquinox, decSolstice, solstEq};
+export {sunDistance, sunLongitude, axialTilt, declination, equationOfTime, meanSunAnomaly, sunAngularRadius, meanSolarTimeOffset, solarTime, solarNoon, solarMidnight, subsolarPoint, sunPosition, refraction, refract, dawn, dusk, sunrise, sunset, civilDawn, civilDusk, nauticalDawn, nauticalDusk, astroDawn, astroDusk, dayLength, marEquinox, junSolstice, sepEquinox, decSolstice, getSolsticeEquinox};

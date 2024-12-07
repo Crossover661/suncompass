@@ -6,7 +6,7 @@
 // "node solstice.js 2025 America/Los_Angeles" returns solstices and equinoxes for 2025 in Pacific Time.
 
 import {DateTime} from "luxon";
-import {subsolarPoint, solstEq} from "./suncalc.js";
+import {subsolarPoint, getSolsticeEquinox} from "./suncalc.js";
 
 var year;
 var zone;
@@ -17,11 +17,10 @@ else {year = args[2];}
 if (args.length <= 3) {zone = "local";}
 else {zone = args[3];}
 
-var dates = solstEq(year);
-var mar = dates.marEquinox.setZone(zone);
-var jun = dates.junSolstice.setZone(zone);
-var sep = dates.sepEquinox.setZone(zone);
-var dec = dates.decSolstice.setZone(zone);
+var mar = getSolsticeEquinox(year, 3, zone);
+var jun = getSolsticeEquinox(year, 6, zone);
+var sep = getSolsticeEquinox(year, 9, zone);
+var dec = getSolsticeEquinox(year, 12, zone);
 var marSSP = subsolarPoint(mar);
 var junSSP = subsolarPoint(jun);
 var sepSSP = subsolarPoint(sep);
