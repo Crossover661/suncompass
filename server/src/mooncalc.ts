@@ -1,4 +1,4 @@
-import {clamp, mod, JDNdate, mins, julianCentury} from "./mathfuncs.js";
+import {clamp, mod, mins, jCentury} from "./mathfuncs.js";
 import {meanSunAnomaly} from "./suncalc.js";
 import {DateTime} from "luxon";
 import {degToRad} from "./constants.js";
@@ -201,7 +201,7 @@ function moonLatLong(JC: number) {
 }
 
 function moonLatitudeLongitude(date: DateTime) {
-    var JC = julianCentury(JDNdate(date));
+    var JC = jCentury(date);
     return moonLatLong(JC);
 }
 

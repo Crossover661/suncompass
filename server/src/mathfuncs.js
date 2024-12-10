@@ -36,6 +36,9 @@ function JDNdate(date) {
     return JDN(year, month, day, time, timezone);
 }
 function julianCentury(JDN) { return (JDN - 2451545) / 36525; }
+function jCentury(date) {
+    return julianCentury(JDNdate(date));
+}
 function direction(bearing) {
     if (bearing < 0 || bearing >= 360) {
         bearing = mod(bearing, 360);
@@ -185,4 +188,4 @@ function approxDeltaT(JC) {
         return 32 * u ** 2 - 20;
     }
 }
-export { intDiv, clamp, mod, JD, JDN, JDNdate, mins, julianCentury, direction, displayTime, displayDuration, approxDeltaT };
+export { intDiv, clamp, mod, JD, JDN, jCentury, mins, direction, displayTime, displayDuration, approxDeltaT };

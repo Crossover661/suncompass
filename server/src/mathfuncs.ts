@@ -37,6 +37,10 @@ function JDNdate(date: DateTime) {
 
 function julianCentury(JDN: number) {return (JDN-2451545)/36525;}
 
+function jCentury(date: DateTime) {
+    return julianCentury(JDNdate(date));
+}
+
 function direction(bearing: number) { // returns the compass direction (ex. SW) given the compass bearing (ex. 225 degrees)
     if (bearing < 0 || bearing >= 360) {bearing = mod(bearing, 360);}
     if (bearing < 11.25) {return "N";}
@@ -134,4 +138,4 @@ function approxDeltaT(JC: number) {
     }
 }
 
-export {intDiv, clamp, mod, JD, JDN, JDNdate, mins, julianCentury, direction, displayTime, displayDuration, approxDeltaT};
+export {intDiv, clamp, mod, JD, JDN, jCentury, mins, direction, displayTime, displayDuration, approxDeltaT};

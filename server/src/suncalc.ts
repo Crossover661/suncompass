@@ -17,13 +17,14 @@ durations, conversion between different time zones, and complexities such as day
 the time zone of a geographic coordinate.
 */
 
-import {clamp, mod, JDNdate, mins, julianCentury, approxDeltaT} from "./mathfuncs.js";
+import {clamp, mod, mins, jCentury, approxDeltaT} from "./mathfuncs.js";
 import {DateTime} from "luxon";
 import {degToRad, sunPeriodicTerms} from "./constants.js";
 import * as fs from "fs";
 
 const N_POLAR_NIGHT = 2**52-1;
 const N_MIDNIGHT_SUN = 2**52+1;
+const N_UNDEFINED = 2**52;
 
 function meanSunLongitude(JC: number): number {
     JC += (approxDeltaT(JC)/3155760000); // division by 3155760000 converts seconds to Julian centuries
@@ -50,7 +51,7 @@ function sunDistance(date: number | DateTime): number {
         return (149598023*(1-ecc**2))/(1+ecc*Math.cos(sunAnomaly(date)*degToRad));
     }
     else {
-        var JC = julianCentury(JDNdate(date));
+        var JC = jCentury(date);
         return sunDistance(JC);
     }
 }
@@ -67,17 +68,17 @@ function sunLongitude(date: number | DateTime): number {
         return mod((meanLong + aberration + nutation)/degToRad, 360);
     }
     else {
-        return sunLongitude(julianCentury(JDNdate(date)));
+        return sunLongitude(jCentury(date));
     }
 }
 function axialTilt(date: number | DateTime): number {
     // Returns the axial tilt of the earth, which also gives the latitudes of the tropics of Cancer and Capricorn.
     if (typeof(date) == "number") {return 23.4392911 - (46.815*date-0.00059*date**2+0.001813*date**3)/3600 + 0.00256*Math.cos((125.04-1934.136*date)*degToRad);}
-    else {return axialTilt(julianCentury(JDNdate(date)));}
+    else {return axialTilt(jCentury(date));}
 }
 function declination(date: number | DateTime): number {
     if (typeof(date) == "number") {return Math.asin(clamp(Math.sin(axialTilt(date)*degToRad)*Math.sin(sunLongitude(date)*degToRad))) / degToRad;}
-    else {return declination(julianCentury(JDNdate(date)))};
+    else {return declination(jCentury(date))};
 }
 function equationOfTime(date: number | DateTime): number { 
     // Equation of time in minutes, i.e. apparent solar time minus mean solar time.
@@ -89,7 +90,7 @@ function equationOfTime(date: number | DateTime): number {
 
         return 4*(vary*Math.sin(2*long*degToRad)-2*ecc*Math.sin(anom*degToRad)+4*ecc*vary*Math.sin(anom*degToRad)*Math.cos(2*long*degToRad)-0.5*(vary**2)*Math.sin(4*long*degToRad)-1.25*(ecc**2)*Math.sin(2*anom*degToRad))/degToRad;
     }
-    else {return equationOfTime(julianCentury(JDNdate(date)));}
+    else {return equationOfTime(jCentury(date));}
 }
 
 function sunAngularRadius(date: DateTime): number {
@@ -143,7 +144,7 @@ function solarMidnight(longitude: number, date: DateTime): DateTime {
 
 function subsolarPoint(date = DateTime.now().toUTC()): number[] {
     // Returns the subsolar point given DateTime. Return value is an array: [latitude, longitude].
-    var JC = julianCentury(JDNdate(date));
+    var JC = jCentury(date);
     var subsolarLat = declination(JC);
     var soltime0 = mins(date.toUTC()) + equationOfTime(JC); // solar time at Greenwich meridian (longitude 0)
     var subsolarLong = mod(-soltime0/4, 360) - 180;
@@ -279,9 +280,9 @@ function dayLength(lat: number, long: number, date: DateTime) {
     // Returns day length in seconds
     var rise = sunrise(lat, long, date);
     var set = sunset(lat, long, date);
-    if (rise.toMillis() == 2**52-1 || set.toMillis() == 2**52-1) {return 0;}
-    else if (rise.toMillis() == 2**52+1 || set.toMillis() == 2**52+1) {return 86400;}
-    else if (rise.toMillis() == 2**52 || set.toMillis() == 2**52) {return NaN;}
+    if (rise.toMillis() == N_POLAR_NIGHT || set.toMillis() == N_POLAR_NIGHT) {return 0;}
+    else if (rise.toMillis() == N_MIDNIGHT_SUN || set.toMillis() == N_MIDNIGHT_SUN) {return 86400;}
+    else if (rise.toMillis() == N_UNDEFINED || set.toMillis() == N_UNDEFINED) {return N_UNDEFINED;}
     else { 
         // If the sun rises and sets. This is always the case in latitudes within (90-axialTilt-5/6) degrees of the equator.
         var length = set.diff(rise).as("seconds");
@@ -366,7 +367,7 @@ function getSolsticeEquinox(year: number, month: number, zone = "utc") {
     else if (month == 12) {return DateTime.fromISO(array[n].decSolstice).setZone(zone);}
     else {
         console.log("Month must be 3, 6, 9, or 12");
-        return DateTime.fromMillis(2**52);
+        return DateTime.fromMillis(N_UNDEFINED);
     }
 }
 
