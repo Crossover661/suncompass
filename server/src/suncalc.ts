@@ -118,8 +118,8 @@ function solarNoon(longitude: number, date: DateTime): DateTime {
 
     // Use longitude and time zone to calculate the time of apparent solar noon.
     var timeOffset = 4*(15*offset-longitude); // difference between clock noon and mean solar noon, in minutes. Example, if offset is -7 and longitude is -120, mean solar noon is 4*(15*(-7)-(-120)) = 4*(-105+120) = 4*15 = 60 minutes after noon on the clock.
-    if (longitude < -90 && offset > 6) {timeOffset -= 1440;}
-    else if (longitude > 90 && offset < -6) {timeOffset += 1440;}
+    if (longitude < -90 && offset > 6) {timeOffset -= 1440;} // far western hemisphere locations with eastern time zones (for example, some Pacific Island countries)
+    else if (longitude > 90 && offset < -6) {timeOffset += 1440;} // far eastern hemisphere locations with western time zones (for example, the far western Aleutian islands)
     noon = noon.plus({minutes: timeOffset}); // adds timeOffset to the value of noon to find mean solar noon
     var timeEq = equationOfTime(noon);
     noon = noon.minus({minutes: timeEq});
@@ -136,7 +136,7 @@ function solarMidnight(longitude: number, date: DateTime): DateTime {
     var timeOffset = 4*(15*offset-longitude);
     if (longitude < -90 && offset > 6) {timeOffset -= 1440;}
     else if (longitude > 90 && offset < -6) {timeOffset += 1440;}
-    midnight = midnight.plus({minutes: timeOffset, milliseconds: 1});
+    midnight = midnight.plus({minutes: timeOffset, milliseconds: 1}); // add back the one millisecond lost previously
     var timeEq = equationOfTime(midnight);
     midnight = midnight.minus({minutes: timeEq});
     return midnight;
@@ -192,31 +192,17 @@ function dawn(lat: number, long: number, date: DateTime, angle: number): DateTim
     // Calculates the time in the morning at which the sun's elevation reaches the specified angle
     var midnight = solarMidnight(long, date);
     var noon = solarNoon(long, date);
-    var dawn: DateTime;
-    if (Math.abs(lat) <= 88-Math.abs(declination(noon))-Math.abs(angle)) { // calculate based on the sunrise equation
-        var interval = noon.diff(midnight).as("milliseconds");
-        dawn = noon;
-        var dec: number, ha: number;
-        for (var i=0; i<3; i++) {
-            dec = declination(dawn);
-            var x = (Math.sin(angle*degToRad)-Math.sin(lat*degToRad)*Math.sin(dec*degToRad))/(Math.cos(lat*degToRad)*Math.cos(dec*degToRad));
-            ha = Math.acos(clamp(x));
-            dawn = noon.minus(ha*interval/Math.PI);
-        }
-    }
-    else { // if the sun is in or near the circumpolar circle, the sunrise equation may break down, so use binary search instead
-        if (sunPosition(lat, long, noon)[0] <= angle) {return DateTime.fromMillis(N_POLAR_NIGHT);} // polar night
-        else if (sunPosition(lat, long, midnight)[0] >= angle) {return DateTime.fromMillis(N_MIDNIGHT_SUN);} // midnight sun
-        dawn = midnight;
-        var t1 = 0;
-        var t2 = noon.diff(midnight).as("milliseconds");
-        var sunAngle: number[];
-        while (t2 - t1 >= 100) { // calculates time of sunrise to precision of 100 ms (0.1 s)
-            dawn = midnight.plus((t1+t2)/2);
-            sunAngle = sunPosition(lat, long, dawn);
-            if (sunAngle[0] >= angle) {t2 = (t1+t2)/2;}
-            else {t1 = (t1+t2)/2;}
-        }
+    var dawn = midnight;
+    if (sunPosition(lat, long, noon)[0] <= angle) {return DateTime.fromMillis(N_POLAR_NIGHT);} // polar night
+    if (sunPosition(lat, long, midnight)[0] >= angle) {return DateTime.fromMillis(N_MIDNIGHT_SUN);} // midnight sun
+    var t1 = 0;
+    var t2 = noon.diff(midnight).as("milliseconds");
+    var sunAngle: number[];
+    while (t2 - t1 >= 100) { // calculates time of sunrise to precision of 100 ms (0.1 s)
+        dawn = midnight.plus((t1+t2)/2);
+        sunAngle = sunPosition(lat, long, dawn);
+        if (sunAngle[0] >= angle) {t2 = (t1+t2)/2;}
+        else {t1 = (t1+t2)/2;}
     }
     return dawn;
 }
@@ -225,46 +211,19 @@ function dusk(lat: number, long: number, date: DateTime, angle: number): DateTim
     // Calculates the time in the evening at which the sun's elevation reaches the specified angle
     var noon = solarNoon(long, date);
     var midnight = solarMidnight(long, date.plus({days: 1}));
-    var dusk: DateTime;
-    if (Math.abs(lat) <= 88-Math.abs(declination(noon))-Math.abs(angle)) {
-        var interval = midnight.diff(noon).as("milliseconds");
-        dusk = noon;
-        var dec: number, ha: number;
-        for (var i=0; i<3; i++) {
-            dec = declination(dusk);
-            var x = (Math.sin(angle*degToRad)-Math.sin(lat*degToRad)*Math.sin(dec*degToRad))/(Math.cos(lat*degToRad)*Math.cos(dec*degToRad));
-            ha = Math.acos(clamp(x));
-            dusk = noon.plus(ha*interval/Math.PI);
-        }
+    var dusk = noon;
+    if (sunPosition(lat, long, noon)[0] <= angle) {return DateTime.fromMillis(N_POLAR_NIGHT);} // polar night
+    if (sunPosition(lat, long, midnight)[0] >= angle) {return DateTime.fromMillis(N_MIDNIGHT_SUN);} // midnight sun
+    var t1 = 0;
+    var t2 = midnight.diff(noon).as("milliseconds");
+    var sunAngle : number[];
+    while (t2 - t1 >= 100) {
+        dusk = noon.plus((t1+t2)/2);
         sunAngle = sunPosition(lat, long, dusk);
-    }
-    else {
-        if (sunPosition(lat, long, noon)[0] <= angle) {return DateTime.fromMillis(N_POLAR_NIGHT);} // polar night
-        else if (sunPosition(lat, long, midnight)[0] >= angle) {return DateTime.fromMillis(N_MIDNIGHT_SUN);} // midnight sun
-        dusk = noon;
-        var t1 = 0;
-        var t2 = midnight.diff(noon).as("milliseconds");
-        var sunAngle : number[];
-        while (t2 - t1 >= 100) {
-            dusk = noon.plus((t1+t2)/2);
-            sunAngle = sunPosition(lat, long, dusk);
-            if (sunAngle[0] <= angle) {t2 = (t1+t2)/2;}
-            else {t1 = (t1+t2)/2;}
-        }
+        if (sunAngle[0] <= angle) {t2 = (t1+t2)/2;}
+        else {t1 = (t1+t2)/2;}
     }
     return dusk;
-}
-
-function polarDawn(lat: number, long: number, date: DateTime, angle: number): DateTime {
-    // polarDawn and polarDusk are used for extreme latitudes, above 85 degrees, where solar elevation angle depends increasingly on 
-    // declination, rather than solar time. As a result, sunrise may occur after solar noon, or sunset before solar noon.
-    return DateTime.fromMillis(0); // placeholder
-}
-
-function polarDusk(lat: number, long: number, date: DateTime, angle: number): DateTime {
-    // polarDawn and polarDusk are used for extreme latitudes, above 85 degrees, where solar elevation angle depends increasingly on 
-    // declination, rather than solar time. As a result, sunrise may occur after solar noon, or sunset before solar noon.
-    return DateTime.fromMillis(0); // placeholder
 }
 
 function sunrise(lat: number, long: number, date: DateTime) {return dawn(lat, long, date, -5/6);} 
@@ -297,7 +256,7 @@ function marEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
     var date = start;
     var long: number;
     var t1 = 0;
-    var t2 = 8*86400*1000;
+    var t2 = 8*86400*1000; // 8 days after start
     while (t2 - t1 >= 1) {
         date = start.plus((t1+t2)/2);
         long = sunLongitude(date);
@@ -313,7 +272,7 @@ function junSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
     var date = start;
     var long: number;
     var t1 = 0;
-    var t2 = 8*86400*1000;
+    var t2 = 8*86400*1000; // 8 days after start
     while (t2 - t1 >= 1) {
         date = start.plus((t1+t2)/2);
         long = sunLongitude(date);
@@ -329,7 +288,7 @@ function sepEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
     var date = start;
     var long: number;
     var t1 = 0;
-    var t2 = 8*86400*1000;
+    var t2 = 8*86400*1000; // 8 days after start
     while (t2 - t1 >= 1) {
         date = start.plus((t1+t2)/2);
         long = sunLongitude(date);
@@ -345,7 +304,7 @@ function decSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
     var date = start;
     var long: number;
     var t1 = 0;
-    var t2 = 8*86400*1000;
+    var t2 = 8*86400*1000; // 8 days after start
     while (t2 - t1 >= 1) {
         date = start.plus((t1+t2)/2);
         long = sunLongitude(date);

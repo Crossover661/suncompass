@@ -178,8 +178,8 @@ function deltaB(JC) {
     return -2235 * Math.sin(moonMeanLongitude(JC) * degToRad) + 382 * Math.sin(A[2] * degToRad) + 175 * Math.sin((A[0] - moonArgLat(JC)) * degToRad) + 175 * Math.sin((A[0] + moonArgLat(JC)) * degToRad) + 127 * Math.sin((moonMeanLongitude(JC) - moonMeanAnomaly(JC)) * degToRad) - 115 * Math.sin((moonMeanLongitude(JC) + moonMeanAnomaly(JC)) * degToRad);
 }
 function moonLatLong(JC) {
-    var lat = moonMeanLongitude(JC) + (l(JC) + deltaL(JC)) / 1000000;
-    var long = (b(JC) + deltaB(JC)) / 1000000;
+    var long = moonMeanLongitude(JC) + (l(JC) + deltaL(JC)) / 1000000;
+    var lat = (b(JC) + deltaB(JC)) / 1000000;
     if (lat < -90) {
         lat = -90;
     }

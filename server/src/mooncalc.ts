@@ -4,7 +4,7 @@ import {DateTime} from "luxon";
 import {degToRad} from "./constants.js";
 
 function moonMeanLongitude(JC: number) {
-    return 218.3164477 + 481267.88123421*JC - 0.0015786*JC**2 + JC**3/538841 - JC**4/65194000; 
+    return 218.3164477 + 481267.88123421*JC - 0.0015786*JC**2 + JC**3/538841 - JC**4/65194000;
 }
 
 function moonMeanElongation(JC: number) {
@@ -192,8 +192,8 @@ function deltaB(JC: number) {
 }
 
 function moonLatLong(JC: number) {
-    var lat = moonMeanLongitude(JC) + (l(JC)+deltaL(JC))/1000000;
-    var long = (b(JC) + deltaB(JC))/1000000;
+    var long = moonMeanLongitude(JC) + (l(JC)+deltaL(JC))/1000000;
+    var lat = (b(JC) + deltaB(JC))/1000000;
     if (lat < -90) {lat = -90;}
     else if (lat > 90) {lat = 90;}
     long = mod(long, 360);
