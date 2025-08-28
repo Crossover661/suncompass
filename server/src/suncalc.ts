@@ -55,10 +55,13 @@ function sunDistance(date: number | DateTime): number {
         return sunDistance(JC);
     }
 }
+
+/**
+ * Calculates the sun's apparent ecliptic longitude to within 0.0009 degrees for years 0-3000. This value is 0 at the March equinox,
+ * 90 at the June solstice, 180 at the September equinox, and 270 at the December solstice.
+ * @param date A Luxon DateTime object, or a number representing the Julian century.
+ */
 function sunLongitude(date: number | DateTime): number {
-    // Calculates the sun's apparent ecliptic longitude to within 0.0009 degrees for years 0 through 3000.
-    // This value is 0 at the March equinox, 90 at the June solstice, 180 at the September equinox, and 270 at the December solstice.
-    // Note that in future years (beyond 2200 or so), the value may end up being in error by minutes due to unpredictable values of delta T.
     if (typeof(date) == "number") {
         var correcteddate = date + (approxDeltaT(date)/3155760000);
         var U = correcteddate / 100;
@@ -71,17 +74,31 @@ function sunLongitude(date: number | DateTime): number {
         return sunLongitude(jCentury(date));
     }
 }
+
+/**
+ * Returns Earth's axial tilt in degrees, which is also the latitudes of the tropics of Cancer and Capricorn.
+ * @param date A Luxon DateTime object, or a number representing the Julian century.
+ */
 function axialTilt(date: number | DateTime): number {
-    // Returns the axial tilt of the earth, which also gives the latitudes of the tropics of Cancer and Capricorn.
     if (typeof(date) == "number") {return 23.4392911 - (46.815*date-0.00059*date**2+0.001813*date**3)/3600 + 0.00256*Math.cos((125.04-1934.136*date)*degToRad);}
     else {return axialTilt(jCentury(date));}
 }
+
+/**
+ * Returns the sun's declination in degrees. This is the latitude of the subsolar point.
+ * @param date A Luxon DateTime object, or a number representing the Julian century.
+ */
+
 function declination(date: number | DateTime): number {
     if (typeof(date) == "number") {return Math.asin(clamp(Math.sin(axialTilt(date)*degToRad)*Math.sin(sunLongitude(date)*degToRad))) / degToRad;}
     else {return declination(jCentury(date))};
 }
+
+/**
+ * Equation of time in minutes (apparent solar time - mean solar time).
+ * @param date A Luxon DateTime object, or a number representing the Julian century.
+ */
 function equationOfTime(date: number | DateTime): number { 
-    // Equation of time in minutes, i.e. apparent solar time minus mean solar time.
     if (typeof(date) == "number") {
         var vary = Math.tan(axialTilt(date)*degToRad/2) ** 2;
         var long = mod(280.46646 + 36000.76983*date + 0.0003032*date**2, 360);
@@ -93,25 +110,39 @@ function equationOfTime(date: number | DateTime): number {
     else {return equationOfTime(jCentury(date));}
 }
 
+/**
+ * Returns sun's angular radius in degrees. To find the angular diameter, multiply this value by 2.
+ * @param date A Luxon DateTime object.
+ */
 function sunAngularRadius(date: DateTime): number {
-    // Returns the angular radius of the sun in degrees. To find the sun's angular diameter, multiply this value by 2.
     return (695700 / sunDistance(date)) / degToRad;
 }
 
+/**
+ * Returns apparent solar time given longitude and time, in minutes after solar midnight. 0 is solar midnight, 720 is solar noon.
+ * @param longitude Longitude in degrees.
+ * @param date A Luxon DateTime object.
+ */
 function solarTime(longitude: number, date: DateTime): number {
-    // Returns apparent solar time given longitude and DateTime. 
-    // Solar time is given in minutes after solar midnight. 0 is solar midnight, 720 is solar noon.
     var timeEq = equationOfTime(date);
     return mod(mins(date) + timeEq + 4*longitude - date.offset, 1440);
 }
 
+/**
+ * Difference between mean solar time at a given longitude and UTC, in minutes.
+ * @param longitude Longitude in degrees.
+ */
 function meanSolarTimeOffset(longitude: number): number {
-    // Returns the difference between the mean solar time at a given longitude and UTC, in minutes.
     return Math.floor(4*longitude+0.5);
 }
 
+/**
+ * Returns the time of solar noon as a DateTime object.
+ * @param longitude Longitude in degrees.
+ * @param date Luxon DateTime object.
+ * @returns 
+ */
 function solarNoon(longitude: number, date: DateTime): DateTime {
-    // Returns the time of solar noon as a DateTime object, given the longitude and a DateTime representing a given date. Margin of error is about 0.1 seconds.
     // Create a DateTime object representing 12:00 local time on the given date.
     var noon = DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 12}, {zone: date.zone});
     var offset = noon.offset / 60;
@@ -126,10 +157,17 @@ function solarNoon(longitude: number, date: DateTime): DateTime {
     return noon;
 }
 
+/**
+ * Returns the time of solar midnight as a DateTime object.
+ * The function returns the time of solar midnight on the previous night. For example, if the date given is July 4, the 
+ * time given is on the night of July 3-4.
+ * @param longitude 
+ * @param date 
+ * @returns 
+ */
 function solarMidnight(longitude: number, date: DateTime): DateTime {
-    // Returns the time of solar midnight as a DateTime object, given the longitude and a DateTime representing a given date.
-    // The function returns the time of solar midnight on the previous night. For example, if the date is July 4, the value returned is on the night between July 3 and July 4.
-    // The "minus(1)" in the formula for midnight below sets the time to 23:59:59.999 on the previous day. This is required because some countries, such as Lebanon, institute DST changes at midnight, so the day may actually start at 01:00:00.
+    // The "minus(1)" in the formula for midnight below sets the time to 23:59:59.999 on the previous day. 
+    // This is required because some countries, such as Chile and Lebanon, institute DST changes at midnight, so the day may actually start at 01:00:00.
     var midnight = DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 0}, {zone: date.zone}).minus(1);
     var offset = midnight.offset / 60;
 
@@ -142,8 +180,12 @@ function solarMidnight(longitude: number, date: DateTime): DateTime {
     return midnight;
 }
 
+/**
+ * Returns the subsolar point, or location on Earth at which the sun is directly overhead.
+ * @param date Luxon DateTime object.
+ * @returns [latitude, longitude] of subsolar point
+ */
 function subsolarPoint(date = DateTime.now().toUTC()): number[] {
-    // Returns the subsolar point given DateTime. Return value is an array: [latitude, longitude].
     var JC = jCentury(date);
     var subsolarLat = declination(JC);
     var soltime0 = mins(date.toUTC()) + equationOfTime(JC); // solar time at Greenwich meridian (longitude 0)
@@ -151,9 +193,15 @@ function subsolarPoint(date = DateTime.now().toUTC()): number[] {
     return [subsolarLat, subsolarLong];
 }
 
+/**
+ * Returns sun position given latitude, longitude, and DateTime.
+ * @param lat Latitude in degrees
+ * @param long Longitude in degrees
+ * @param date Luxon DateTime object
+ * @returns Array: [elevation, azimuth]. Elevation is in degrees above horizon, azimuth is degrees clockwise from north
+ * Solar elevation is not refracted. To find the solar elevation angle adjusted for atmospheric refraction, use refract(sunPosition[0])
+ */
 function sunPosition(lat: number, long: number, date: DateTime): number[] {
-    // Returns sun position given latitude, longitude, and DateTime. Return value is an array: [elevation, azimuth]. Elevation is given in degrees above the horizon, azimuth is given in degrees clockwise from north.
-    // The solar elevation returned by this function is not adjusted for refraction. To find the refracted solar elevation angle, use the function refract(sunPosition[0])
     var subsolarPt = subsolarPoint(date);
     var sunLat = subsolarPt[0] * degToRad;
     var sunLong = subsolarPt[1] * degToRad;
@@ -169,8 +217,11 @@ function sunPosition(lat: number, long: number, date: DateTime): number[] {
     return [elev, az];
 }
 
+/**
+ * The number of degrees by which the sun's apparent elevation increases due to atmospheric refraction.
+ * @param elev Solar elevation angle before refraction.
+ */
 function refraction(elev: number): number {
-    // The number of degrees by which the sun's apparent elevation increases due to atmospheric refraction.
     // This formula is borrowed from NOAA's solar calculator but modified slightly to be continuous.
     if (Math.abs(elev) >= 89.999) {return 0;}
     else {
@@ -183,13 +234,43 @@ function refraction(elev: number): number {
     }
 }
 
+/**
+ * Adjusts the given solar elevation angle (elev) to account for atmospheric refraction.
+ */
 function refract(elev: number): number {
-    // Adjusts the solar elevation angle to account for refraction of sunlight.
     return elev + refraction(elev);
 }
 
+/**
+ * Calculates the time at which the solar elevation angle reaches its maximum. In the polar regions, this may be significantly
+ * different from solar noon, because the sun's declination change over the course of a day starts affecting solar angle more 
+ * than its longitudinal movement.
+ * @param lat Latitude in degrees
+ * @param long Longitude in degrees
+ * @param date Luxon DateTime object representing date
+ * @returns Luxon DateTime object for time of max solar elevation
+ */
+function maxSunElevTime(lat: number, long: number, date: DateTime): DateTime {
+    // use gradient ascent and binary search to find max solar angle time
+    var intervals = [];
+    for (var i=0; i<=21; i+=3) {
+        intervals.push(DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: i},{zone: date.zone}));
+    }
+    intervals.push(DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 0},{zone: date.zone}).plus({days: 1}));
+    // complete function here
+    return DateTime.fromMillis(0); // placeholder return value
+}
+
+/**
+ * Calculates the time in the morning at which the sun's elevation reaches the specified angle. Angle should be -5/6 for sunrise,
+ * -6 for civil twilight, -12 for nautical twilight, and -18 for astronomical twilight.
+ * @param lat Latitude in degrees
+ * @param long Longitude in degrees
+ * @param date Luxon DateTime object
+ * @param angle Solar elevation angle in degrees
+ * @returns A Luxon DateTime object representing the sunrise/dawn time
+ */
 function dawn(lat: number, long: number, date: DateTime, angle: number): DateTime {
-    // Calculates the time in the morning at which the sun's elevation reaches the specified angle
     var midnight = solarMidnight(long, date);
     var noon = solarNoon(long, date);
     var dawn = midnight;
@@ -207,8 +288,16 @@ function dawn(lat: number, long: number, date: DateTime, angle: number): DateTim
     return dawn;
 }
 
+/**
+ * Calculates the time in the evening at which the sun's elevation reaches the specified angle. Angle should be -5/6 for sunset,
+ * -6 for civil twilight, -12 for nautical twilight, and -18 for astronomical twilight.
+ * @param lat Latitude in degrees
+ * @param long Longitude in degrees
+ * @param date Luxon DateTime object
+ * @param angle Solar elevation angle in degrees
+ * @returns A Luxon DateTime object representing the sunrise/dawn time
+ */
 function dusk(lat: number, long: number, date: DateTime, angle: number): DateTime {
-    // Calculates the time in the evening at which the sun's elevation reaches the specified angle
     var noon = solarNoon(long, date);
     var midnight = solarMidnight(long, date.plus({days: 1}));
     var dusk = noon;
