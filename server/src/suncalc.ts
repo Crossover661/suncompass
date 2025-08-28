@@ -252,11 +252,15 @@ function refract(elev: number): number {
  */
 function maxSunElevTime(lat: number, long: number, date: DateTime): DateTime {
     // use gradient ascent and binary search to find max solar angle time
-    var intervals = [];
-    for (var i=0; i<=21; i+=3) {
-        intervals.push(DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: i},{zone: date.zone}));
+    var intervals = [], derivatives = [];
+    for (var h=0; h<=21; h+=3) {
+        intervals.push(DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: h},{zone: date.zone}));
     }
     intervals.push(DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 0},{zone: date.zone}).plus({days: 1}));
+    for (var i=0; i<9; i++) {
+        var diff = sunPosition(lat, long, intervals[i].plus(500))[0] - sunPosition(lat, long, intervals[i].minus(500))[0];
+        derivatives.push(diff);
+    }
     // complete function here
     return DateTime.fromMillis(0); // placeholder return value
 }
@@ -268,7 +272,7 @@ function maxSunElevTime(lat: number, long: number, date: DateTime): DateTime {
  * @param long Longitude in degrees
  * @param date Luxon DateTime object
  * @param angle Solar elevation angle in degrees
- * @returns A Luxon DateTime object representing the sunrise/dawn time
+ * @returns A Luxon DateTime object representing the sunrise/dawn time.
  */
 function dawn(lat: number, long: number, date: DateTime, angle: number): DateTime {
     var midnight = solarMidnight(long, date);
@@ -324,10 +328,17 @@ function nauticalDusk(lat: number, long: number, date: DateTime) {return dusk(la
 function astroDawn(lat: number, long: number, date: DateTime) {return dawn(lat, long, date, -18);}
 function astroDusk(lat: number, long: number, date: DateTime) {return dusk(lat, long, date, -18);}
 
+/**
+ * Returns day length in seconds (time from sunrise to sunset). If sunset is after midnight or sunrise is before midnight (due to time
+ * zone complexities and DST), it returns the number of seconds the sun is up from solar midnight to the next solar midnight.
+ * @param lat Latitude in degrees
+ * @param long Longitude in degrees
+ * @param date Luxon DateTime object representing date
+ * @returns Seconds of daylight (0 - 86400)
+ */
 function dayLength(lat: number, long: number, date: DateTime) { 
-    // Returns day length in seconds
-    var rise = sunrise(lat, long, date);
-    var set = sunset(lat, long, date);
+    var rise = dawn(lat, long, date, -5/6);
+    var set = dusk(lat, long, date, -5/6);
     if (rise.toMillis() == N_POLAR_NIGHT || set.toMillis() == N_POLAR_NIGHT) {return 0;}
     else if (rise.toMillis() == N_MIDNIGHT_SUN || set.toMillis() == N_MIDNIGHT_SUN) {return 86400;}
     else if (rise.toMillis() == N_UNDEFINED || set.toMillis() == N_UNDEFINED) {return N_UNDEFINED;}
@@ -339,8 +350,13 @@ function dayLength(lat: number, long: number, date: DateTime) {
     }
 }
 
+/**
+ * Returns the time of the March equinox in given year and time zone
+ * @param year Year (example: 2025)
+ * @param timezone Time zone in IANA format (example: "utc" or "America/Los_Angeles")
+ * @returns Time of March equinox as a Luxon DateTime object.
+ */
 function marEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
-    // Returns a DateTime object representing the moment of the March equinox in a given year (ex. 2024) and time zone (ex. "America/Los_Angeles")
     var start = DateTime.fromObject({year:year, month:3, day:16}, {zone: "utc"});
     var date = start;
     var long: number;
@@ -355,8 +371,13 @@ function marEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
     return date.setZone(timezone);
 }
 
+/**
+ * Returns the time of the June solstice in given year and time zone
+ * @param year Year (example: 2025)
+ * @param timezone Time zone in IANA format (example: "utc" or "America/Los_Angeles")
+ * @returns Time of June solstice as a Luxon DateTime object.
+ */
 function junSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
-    // Returns a DateTime object representing the moment of the June solstice in a given year and time zone
     var start = DateTime.fromObject({year:year, month:6, day:16}, {zone: "utc"});
     var date = start;
     var long: number;
@@ -371,6 +392,12 @@ function junSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
     return date.setZone(timezone);
 }
 
+/**
+ * Returns the time of the September equinox in given year and time zone
+ * @param year Year (example: 2025)
+ * @param timezone Time zone in IANA format (example: "utc" or "America/Los_Angeles")
+ * @returns Time of September equinox as a Luxon DateTime object.
+ */
 function sepEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
     // Returns a DateTime object representing the moment of the September equinox in a given year and time zone
     var start = DateTime.fromObject({year:year, month:9, day:18}, {zone: "utc"});
@@ -387,8 +414,13 @@ function sepEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
     return date.setZone(timezone);
 }
 
+/**
+ * Returns the time of the December solstice in given year and time zone
+ * @param year Year (example: 2025)
+ * @param timezone Time zone in IANA format (example: "utc" or "America/Los_Angeles")
+ * @returns Time of December solstice as a Luxon DateTime object.
+ */
 function decSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
-    // Returns a DateTime object representing the moment of the December solstice in a given year and time zone
     var start = DateTime.fromObject({year:year, month:12, day:18}, {zone: "utc"});
     var date = start;
     var long: number;
@@ -403,8 +435,14 @@ function decSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
     return date.setZone(timezone);
 }
 
+/**
+ * Reads solstice or equinox from the solstices_equinoxes.json file.
+ * @param year Year (example: 2025)
+ * @param month Month of solstice or equinox. Must be 3, 6, 9, or 12.
+ * @param zone Time zone (example: "utc" or "America/Los_Angeles")
+ * @returns Luxon DateTime object with equinox/solstice date in given time zone.
+ */
 function getSolsticeEquinox(year: number, month: number, zone = "utc") {
-    // This file queries solstice and equinox times from a JSON file.
     const data = fs.readFileSync("./solstices_equinoxes.json", "utf8");
     const array = JSON.parse(data);
     var n = year - array[0].year;
