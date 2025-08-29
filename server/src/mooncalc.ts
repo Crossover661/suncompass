@@ -148,52 +148,52 @@ const ptl = [ // periodic terms for the moon's latitude
 ];
 
 function l(JC: number) {
-    var l = 0;
-    for (var i=0; i<ptld.length; i++) {
-        var curRow = ptld[i];
+    let l = 0;
+    for (let i=0; i<ptld.length; i++) {
+        let curRow = ptld[i];
         l += curRow[4] * Math.sin((curRow[0]*moonMeanElongation(JC) + curRow[1]*meanSunAnomaly(JC) + curRow[2]*moonMeanAnomaly(JC) + curRow[3]*moonArgLat(JC))*degToRad);
     }
     return l;
 }
 
 function r(JC: number) {
-    var r = 0;
-    for (var i=0; i<ptld.length; i++) {
-        var curRow = ptld[i];
+    let r = 0;
+    for (let i=0; i<ptld.length; i++) {
+        let curRow = ptld[i];
         r += curRow[5] * Math.sin((curRow[0]*moonMeanElongation(JC) + curRow[1]*meanSunAnomaly(JC) + curRow[2]*moonMeanAnomaly(JC) + curRow[3]*moonArgLat(JC))*degToRad);
     }
     return r;
 }
 
 function b(JC: number) {
-    var b = 0;
-    for (var i=0; i<ptl.length; i++) {
-        var curRow = ptl[i];
+    let b = 0;
+    for (let i=0; i<ptl.length; i++) {
+        let curRow = ptl[i];
         b += curRow[4] * Math.sin((curRow[0]*moonMeanElongation(JC) + curRow[1]*meanSunAnomaly(JC) + curRow[2]*moonMeanAnomaly(JC) + curRow[3]*moonArgLat(JC))*degToRad);
     }
     return b;
 }
 
 function a(JC: number) {
-    var a1 = 119.75 + 131.849*JC;
-    var a2 = 53.09 + 479264.29*JC;
-    var a3 = 313.45 + 481266.484*JC;
+    let a1 = 119.75 + 131.849*JC;
+    let a2 = 53.09 + 479264.29*JC;
+    let a3 = 313.45 + 481266.484*JC;
     return [a1, a2, a3];
 }
 
 function deltaL(JC: number) {
-    var A = a(JC);
+    let A = a(JC);
     return 3958*Math.sin(A[0]*degToRad) + 1962*Math.sin((moonMeanLongitude(JC)-moonArgLat(JC))*degToRad) + 318*Math.sin(A[1]*degToRad);
 }
 
 function deltaB(JC: number) {
-    var A = a(JC);
+    let A = a(JC);
     return -2235*Math.sin(moonMeanLongitude(JC)*degToRad) + 382*Math.sin(A[2]*degToRad) + 175*Math.sin((A[0]-moonArgLat(JC))*degToRad) + 175*Math.sin((A[0]+moonArgLat(JC))*degToRad) + 127*Math.sin((moonMeanLongitude(JC)-moonMeanAnomaly(JC))*degToRad) - 115*Math.sin((moonMeanLongitude(JC)+moonMeanAnomaly(JC))*degToRad);
 }
 
 function moonLatLong(JC: number) {
-    var long = moonMeanLongitude(JC) + (l(JC)+deltaL(JC))/1000000;
-    var lat = (b(JC) + deltaB(JC))/1000000;
+    let long = moonMeanLongitude(JC) + (l(JC)+deltaL(JC))/1000000;
+    let lat = (b(JC) + deltaB(JC))/1000000;
     if (lat < -90) {lat = -90;}
     else if (lat > 90) {lat = 90;}
     long = mod(long, 360);
@@ -201,7 +201,7 @@ function moonLatLong(JC: number) {
 }
 
 function moonLatitudeLongitude(date: DateTime) {
-    var JC = jCentury(date);
+    let JC = jCentury(date);
     return moonLatLong(JC);
 }
 

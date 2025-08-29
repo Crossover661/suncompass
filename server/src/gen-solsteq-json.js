@@ -7,15 +7,15 @@ them to be queried quickly rather than repeatedly calculated. Solstices and equi
 import * as fs from "node:fs";
 import {marEquinox, junSolstice, sepEquinox, decSolstice} from "./suncalc.js";
 
-var data = [];
+let data = [];
 
-var [startYear, endYear] = [0, 2500];
-for (var year=startYear; year<=endYear; year++) {
-    var me = marEquinox(year).toISO();
-    var js = junSolstice(year).toISO();
-    var se = sepEquinox(year).toISO();
-    var ds = decSolstice(year).toISO();
-    var obj = {year: year, marEquinox: me, junSolstice: js, sepEquinox: se, decSolstice: ds};
+let [startYear, endYear] = [0, 2500];
+for (let year=startYear; year<=endYear; year++) {
+    let me = marEquinox(year).toISO();
+    let js = junSolstice(year).toISO();
+    let se = sepEquinox(year).toISO();
+    let ds = decSolstice(year).toISO();
+    let obj = {year: year, marEquinox: me, junSolstice: js, sepEquinox: se, decSolstice: ds};
     data.push(obj);
 }
 

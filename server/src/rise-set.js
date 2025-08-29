@@ -3,15 +3,15 @@ import {find} from "geo-tz";
 import * as suncalc from "./suncalc.js";
 import {direction} from "./mathfuncs.js";
 
-var args = process.argv;
-var zone, date;
+let args = process.argv;
+let zone, date;
 if (args.length == 2) {
-    var [lat, long] = [34.42,-119.85]; // the location around the University of California, Santa Barbara
+    let [lat, long] = [34.42,-119.85]; // the location around the University of California, Santa Barbara
     zone = find(lat, long)[0];
     date = DateTime.now().setZone(zone);   
 }
 else if (args.length == 4) { // Accepts coordinates. Example: "node rise-set 40.75 -73.99" gives rise-set times for Manhattan, New York City in Eastern Time.
-    var [lat, long] = [Number(args[2]), Number(args[3])];
+    let [lat, long] = [Number(args[2]), Number(args[3])];
     zone = find(lat, long)[0];
     date = DateTime.now().setZone(zone);
 }
@@ -22,9 +22,9 @@ else if (args.length == 5) {
     "2022-02-22T02:22:22" --> February 22, 2022 at 2:22:22 AM
     "2024-12-25T19:12:06" --> December 25, 2024 at 7:12:06 PM (19:12:06)
     */
-    var [lat, long] = [Number(args[2]), Number(args[3])];
+    let [lat, long] = [Number(args[2]), Number(args[3])];
     zone = find(lat, long)[0];
-    var curYear = DateTime.now().setZone(zone).year;
+    let curYear = DateTime.now().setZone(zone).year;
     if (args[4] == "me") {date = suncalc.marEquinox(curYear, zone);}
     else if (args[4] == "js") {date = suncalc.junSolstice(curYear, zone);}
     else if (args[4] == "se") {date = suncalc.sepEquinox(curYear, zone);}
@@ -41,17 +41,17 @@ function stringify(date) {
     else {return date.toFormat("h:mm:ss a");}
 }
 
-var subsolarPoint = suncalc.subsolarPoint(date);
-var [elev, az] = suncalc.sunPosition(lat, long, date);
-var apparentElev = suncalc.refract(elev);
+let subsolarPoint = suncalc.subsolarPoint(date);
+let [elev, az] = suncalc.sunPosition(lat, long, date);
+let apparentElev = suncalc.refract(elev);
 
-var dawn = [suncalc.civilDawn(lat,long,date), suncalc.nauticalDawn(lat,long,date), suncalc.astroDawn(lat,long,date)];
-var sunrise = suncalc.sunrise(lat,long,date);
-var solarNoon = suncalc.solarNoon(long,date);
-var dist = suncalc.sunDistance(date);
-var sunset = suncalc.sunset(lat,long,date);
-var dusk = [suncalc.civilDusk(lat,long,date), suncalc.nauticalDusk(lat,long,date), suncalc.astroDusk(lat,long,date)];
-var dayLength = suncalc.dayLength(lat,long,date);
+let dawn = [suncalc.civilDawn(lat,long,date), suncalc.nauticalDawn(lat,long,date), suncalc.astroDawn(lat,long,date)];
+let sunrise = suncalc.sunrise(lat,long,date);
+let solarNoon = suncalc.solarNoon(long,date);
+let dist = suncalc.sunDistance(date);
+let sunset = suncalc.sunset(lat,long,date);
+let dusk = [suncalc.civilDusk(lat,long,date), suncalc.nauticalDusk(lat,long,date), suncalc.astroDusk(lat,long,date)];
+let dayLength = suncalc.dayLength(lat,long,date);
 
 console.log(zone);
 console.log(date.toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS));

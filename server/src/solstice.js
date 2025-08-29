@@ -8,23 +8,23 @@
 import {DateTime} from "luxon";
 import {subsolarPoint, getSolsticeEquinox} from "./suncalc.js";
 
-var year;
-var zone;
+let year;
+let zone;
 
-var args = process.argv;
+let args = process.argv;
 if (args.length == 2) {year = DateTime.now().year;}
 else {year = args[2];}
 if (args.length <= 3) {zone = "local";}
 else {zone = args[3];}
 
-var mar = getSolsticeEquinox(year, 3, zone);
-var jun = getSolsticeEquinox(year, 6, zone);
-var sep = getSolsticeEquinox(year, 9, zone);
-var dec = getSolsticeEquinox(year, 12, zone);
-var marSSP = subsolarPoint(mar);
-var junSSP = subsolarPoint(jun);
-var sepSSP = subsolarPoint(sep);
-var decSSP = subsolarPoint(dec);
+let mar = getSolsticeEquinox(year, 3, zone);
+let jun = getSolsticeEquinox(year, 6, zone);
+let sep = getSolsticeEquinox(year, 9, zone);
+let dec = getSolsticeEquinox(year, 12, zone);
+let marSSP = subsolarPoint(mar);
+let junSSP = subsolarPoint(jun);
+let sepSSP = subsolarPoint(sep);
+let decSSP = subsolarPoint(dec);
 
 console.log("March equinox: " + mar.toFormat("MMM d, y HH:mm:ss ZZZZ"));
 console.log("Subsolar point: " + marSSP[0].toFixed(4) + ", " + marSSP[1].toFixed(4));
