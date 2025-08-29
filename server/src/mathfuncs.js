@@ -1,4 +1,5 @@
 const degToRad = Math.PI / 180;
+/** Divide x by y, rounding the output to the nearest integer with smaller absolute value. */
 function intDiv(x, y) {
     if (x < 0) {
         return Math.ceil(x / y);
@@ -7,18 +8,22 @@ function intDiv(x, y) {
         return Math.floor(x / y);
     }
 }
-function clamp(x) {
-    if (x <= -1) {
-        return -1;
+/** Clamps a number to the range [min, max].
+ * If min and max are not specified, they default to -1 and 1 respectively.*/
+function clamp(x, min = -1, max = 1) {
+    if (x <= min) {
+        return min;
     }
-    else if (x >= 1) {
-        return 1;
+    else if (x >= max) {
+        return max;
     }
     else {
         return x;
     }
 }
-function mod(x, y) { return ((x % y) + y) % y; } // mod function, but output is always in the range [0, y)
+/** Calculates x modulo y, where the output is in the range [0, y). */
+function mod(x, y) { return ((x % y) + y) % y; }
+/** Calculates Julian day given Gregorian calendar date. */
 function JD(y, m, d) {
     return intDiv(1461 * (y + 4800 + intDiv(m - 14, 12)), 4) +
         intDiv(367 * (m - 2 - 12 * intDiv(m - 14, 12)), 12) -
@@ -26,8 +31,8 @@ function JD(y, m, d) {
 }
 function JDN(y, m, d, time, timezone) { return JD(y, m, d) + (time - 60 * timezone - 720) / 1440; } // time in minutes after midnight
 function mins(date) { return date.hour * 60 + date.minute + date.second / 60 + date.millisecond / 60000; }
+/** Calculates the Julian day number of a Luxon DateTime object. */
 function JDNdate(date) {
-    // gets Julian day (including fractional part) given a Luxon DateTime object
     let year = date.year;
     let month = date.month;
     let day = date.day;
@@ -36,9 +41,15 @@ function JDNdate(date) {
     return JDN(year, month, day, time, timezone);
 }
 function julianCentury(JDN) { return (JDN - 2451545) / 36525; }
+/** Calculates the Julian century number of a Luxon DateTime object. */
 function jCentury(date) {
     return julianCentury(JDNdate(date));
 }
+/**
+ * Returns the compass point (ex: NE, SSW) given a compass bearing in degrees.
+ * @param bearing Compass bearing, in degrees clockwise from north.
+ * @returns Compass point (either N, NNE, NE, ENE, E, ESE, SE, SSE, S, SSW, SW, WSW, W, WNW, NW, or NNW)
+ */
 function direction(bearing) {
     if (bearing < 0 || bearing >= 360) {
         bearing = mod(bearing, 360);
@@ -95,7 +106,7 @@ function direction(bearing) {
         return "N";
     }
 }
-function displayTime(date, format = 12) {
+function displayTime(date, twelveHourFormat = false) {
     if (date == Number.POSITIVE_INFINITY) {
         return "∞";
     }
@@ -105,7 +116,7 @@ function displayTime(date, format = 12) {
     else if (isNaN(date)) {
         return NaN;
     }
-    else if (format == 12) {
+    else if (twelveHourFormat) {
         return date.toFormat("h:mm:ss a");
     }
     else {
@@ -126,11 +137,11 @@ function displayDuration(duration) {
         return duration.toFormat("h:mm:ss");
     }
 }
+/** This function finds the approximate value of delta T, the difference between terrestrial time (recorded by atomic clocks)
+and mean solar time (based on the Earth's rotation). This function's margin of error is 4.8 seconds in 2024, based on the
+value this function returns (73.8 seconds) versus the real value (69 seconds). The margin of error increases for years before
+1800 and after 2100, as the Earth's rotation varies unpredictably.*/
 function approxDeltaT(JC) {
-    /* This function finds the approximate value of delta T, the difference between terrestrial time (recorded by atomic clocks)
-    and mean solar time (based on the Earth's rotation). This function's margin of error is 4.8 seconds in 2024, based on the
-    value this function returns (73.8 seconds) versus the real value (69 seconds). The margin of error increases for years before
-    1800 and after 2100, as the Earth's rotation varies unpredictably.*/
     let y = 100 * JC + 2000;
     if (y < 500) {
         let u = y / 100;
