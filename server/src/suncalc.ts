@@ -243,7 +243,7 @@ function refract(elev: number): number {
 }
 
 /**
- * Calculates the time at which the solar elevation angle reaches its maximum. In the polar regions, this may be significantly
+ * Calculates the time(s) at which the solar elevation angle reaches its maximum. In the polar regions, this may be significantly
  * different from solar noon, because the sun's declination change over the course of a day starts affecting solar angle more 
  * than its longitudinal movement.
  * @param lat Latitude in degrees
@@ -251,9 +251,9 @@ function refract(elev: number): number {
  * @param date Luxon DateTime object representing date
  * @returns Luxon DateTime object for time of max solar elevation
  */
-function maxSunElevTime(lat: number, long: number, date: DateTime): DateTime {
+function maxSunElevTime(lat: number, long: number, date: DateTime): DateTime[] {
+    let intervals = [], derivatives = [], peaks = [];
     // use gradient ascent and binary search to find max solar angle time
-    let intervals = [], derivatives = [];
     for (let h=0; h<=21; h+=3) {
         intervals.push(DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: h},{zone: date.zone}));
     }
@@ -263,18 +263,21 @@ function maxSunElevTime(lat: number, long: number, date: DateTime): DateTime {
         derivatives.push(diff);
     }
     for (let j=0; j<8; j++) {
-        if (derivatives[j] > 0 && derivatives[j+1] <= 0) { // if derivative changes from + to - within 3-hour period
+        if (derivatives[j] >= 0 && derivatives[j+1] < 0) { // if derivative changes from + to - within 3-hour period
             // binary search to find where derivative = 0 (i.e. max sun height)
             let t1 = 0;
             let t2 = intervals[j+1].diff(intervals[j]).as("milliseconds");
             let m = intervals[j];
             while (t2 - t1 >= 100) {
                 m = intervals[j].plus((t1+t2)/2);
-                let deriv = sunPosition(lat, long, m.plus(500))[0] - sunPosition(lat, long, m.plus(500))[0];
+                let deriv = sunPosition(lat, long, m.plus(500))[0] - sunPosition(lat, long, m.minus(500))[0];
+                if (deriv >= 0) {t1 = (t1+t2)/2;} // sun's altitude is still increasing
+                else {t2 = (t1+t2)/2;} // sun's altitude is now decreasing
             }
+            peaks.push(m);
         }
     }
-    return DateTime.fromMillis(0); // placeholder return value
+    return peaks;
 }
 
 /**
