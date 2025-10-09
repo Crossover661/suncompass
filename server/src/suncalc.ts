@@ -138,7 +138,7 @@ function meanSolarTimeOffset(longitude: number): number {
 }
 
 /**
- * Returns the time of solar noon as a DateTime object.
+ * Returns the time(s) of solar noon as a DateTime object.
  * @param longitude Longitude in degrees.
  * @param date Luxon DateTime object.
  * @returns 
@@ -151,29 +151,52 @@ function solarNoon(longitude: number, date: DateTime): DateTime[] {
     let dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 24 hours, can be 23 or 25 with DST
     let st00 = solarTime(longitude, beginningOfDay);
     let st24 = solarTime(longitude, endOfDay);
-    let solarNoons = [];
+    let stDiff = mod((st24 - st00 - 720), 1440) + 720;
+    let solarTimeRate = stDiff / dayLength; // the rate at which solar time changes through the day, relative to actual time
 
     if (st00 > 600 && st00 <= 720 && st24 > 720 && st24 < 840) { // 2 solar noons in a day
-        
+        let solarNoon0 = beginningOfDay.plus({minutes: (720 - st00) / solarTimeRate});
+        let solarNoon1 = endOfDay.minus({minutes: (st24 - 720) / solarTimeRate});
+        return [solarNoon0, solarNoon1];
     }
     else if (st00 > 720 && st00 < 840 && st24 > 600 && st00 <= 720) { // 0 solar noons in a day
         return [];
     }
     else { // 1 solar noon in a day
-
+        let solarNoon = beginningOfDay.plus({minutes: mod(720 - st00, 1440) / solarTimeRate});
+        return [solarNoon];
     }
 }
 
 /**
- * Returns the time of solar midnight as a DateTime object.
- * The function returns the time of solar midnight on the previous night. For example, if the date given is July 4, the 
- * time given is on the night of July 3-4.
- * @param longitude 
- * @param date 
+ * Returns the time(s) of solar midnight as a DateTime object.
+ * @param longitude Longitude in degrees.
+ * @param date Luxon DateTime object.
  * @returns 
  */
 function solarMidnight(longitude: number, date: DateTime): DateTime[] {
-    
+    let beginningOfDay = DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 0}, {zone: date.zone});
+    let endOfDay;
+    if (beginningOfDay.hour == 1) {endOfDay = beginningOfDay.plus({hours: 23});}
+    else {endOfDay = beginningOfDay.plus({days: 1});}
+    let dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 24 hours, can be 23 or 25 with DST
+    let st00 = solarTime(longitude, beginningOfDay);
+    let st24 = solarTime(longitude, endOfDay);
+    let stDiff = mod((st24 - st00 - 720), 1440) + 720;
+    let solarTimeRate = stDiff / dayLength; // the rate at which solar time changes through the day, relative to actual time
+
+    if (st00 > 1320 && st24 < 120) { // 2 solar midnights in a day
+        let solarMidnight0 = beginningOfDay.plus({minutes: (1440 - st00) / solarTimeRate});
+        let solarMidnight1 = endOfDay.minus({minutes: st24 / solarTimeRate});
+        return [solarMidnight0, solarMidnight1];
+    }
+    else if (st00 < 120 && st24 > 1320) { // 0 solar midnights in a day
+        return [];
+    }
+    else { // 1 solar midnight in a day
+        let solarMidnight = endOfDay.minus({minutes: st24 / solarTimeRate});
+        return [solarMidnight];
+    }
 }
 
 /**
@@ -313,6 +336,23 @@ function minSunElevTime(lat: number, long: number, date: DateTime): DateTime[] {
 }
 
 /**
+ * Calculates the maximums and minimums of the solar elevation angle, including midnight local time. This is a helper function
+ * for "dawn" and "dusk" functions below.
+ */
+function maxAndMin(lat: number, long: number, date: DateTime): DateTime[] {
+    let startOfDay = DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 0}, {zone: date.zone});
+    let times = [startOfDay];
+    let minimums = minSunElevTime(lat, long, date);
+    let maximums = maxSunElevTime(lat, long, date);
+    for (let min of minimums) {times.push(min);}
+    for (let max of maximums) {times.push(max);}
+    let endOfDay = startOfDay.plus({days: 1});
+    if (endOfDay.hour == 1) {endOfDay = endOfDay.minus({hours: 1});}
+    let sortedTimes = times.sort((a, b) => a.toMillis() - b.toMillis());
+    return sortedTimes;
+}
+
+/**
  * Calculates the time in the morning at which the sun's elevation reaches the specified angle. Angle should be -5/6 for sunrise,
  * -6 for civil twilight, -12 for nautical twilight, and -18 for astronomical twilight.
  * @param lat Latitude in degrees
@@ -321,22 +361,22 @@ function minSunElevTime(lat: number, long: number, date: DateTime): DateTime[] {
  * @param angle Solar elevation angle in degrees
  * @returns A Luxon DateTime object representing the sunrise/dawn time.
  */
-function dawn(lat: number, long: number, date: DateTime, angle: number): DateTime {
-    let midnight = solarMidnight(long, date);
-    let noon = solarNoon(long, date);
-    let dawn = midnight;
-    if (sunPosition(lat, long, noon)[0] <= angle) {return DateTime.fromMillis(N_POLAR_NIGHT);} // polar night
-    if (sunPosition(lat, long, midnight)[0] >= angle) {return DateTime.fromMillis(N_MIDNIGHT_SUN);} // midnight sun
-    let t1 = 0;
-    let t2 = noon.diff(midnight).as("milliseconds");
-    let sunAngle: number[];
-    while (t2 - t1 >= 100) { // calculates time of sunrise to precision of 100 ms (0.1 s)
-        dawn = midnight.plus((t1+t2)/2);
-        sunAngle = sunPosition(lat, long, dawn);
-        if (sunAngle[0] >= angle) {t2 = (t1+t2)/2;}
-        else {t1 = (t1+t2)/2;}
+function dawn(lat: number, long: number, date: DateTime, angle: number): DateTime[] {
+    let maxAndMinTimes = maxAndMin(lat, long, date);
+    let dawnTimes = [];
+    for (let i=0; i<maxAndMinTimes.length-1; i++) {
+        let t0 = maxAndMinTimes[i], t1 = maxAndMinTimes[i+1];
+        let s0 = sunPosition(lat, long, t0)[0], s1 = sunPosition(lat, long, t1)[0];
+        if (s0 <= angle && s1 >= angle) {
+            while (t1.diff(t0).as("milliseconds") > 1) {
+                let avg = DateTime.fromMillis((t0.toMillis() + t1.toMillis())/2, {zone: date.zone});
+                if (sunPosition(lat, long, avg)[0] < angle) {t0 = avg;}
+                else {t1 = avg;}
+            }
+            dawnTimes.push(t0);
+        }
     }
-    return dawn;
+    return dawnTimes;
 }
 
 /**
@@ -348,22 +388,22 @@ function dawn(lat: number, long: number, date: DateTime, angle: number): DateTim
  * @param angle Solar elevation angle in degrees
  * @returns A Luxon DateTime object representing the sunrise/dawn time
  */
-function dusk(lat: number, long: number, date: DateTime, angle: number): DateTime {
-    let noon = solarNoon(long, date);
-    let midnight = solarMidnight(long, date.plus({days: 1}));
-    let dusk = noon;
-    if (sunPosition(lat, long, noon)[0] <= angle) {return DateTime.fromMillis(N_POLAR_NIGHT);} // polar night
-    if (sunPosition(lat, long, midnight)[0] >= angle) {return DateTime.fromMillis(N_MIDNIGHT_SUN);} // midnight sun
-    let t1 = 0;
-    let t2 = midnight.diff(noon).as("milliseconds");
-    let sunAngle : number[];
-    while (t2 - t1 >= 100) {
-        dusk = noon.plus((t1+t2)/2);
-        sunAngle = sunPosition(lat, long, dusk);
-        if (sunAngle[0] <= angle) {t2 = (t1+t2)/2;}
-        else {t1 = (t1+t2)/2;}
+function dusk(lat: number, long: number, date: DateTime, angle: number): DateTime[] {
+    let maxAndMinTimes = maxAndMin(lat, long, date);
+    let duskTimes = [];
+    for (let i=0; i<maxAndMinTimes.length-1; i++) {
+        let t0 = maxAndMinTimes[i], t1 = maxAndMinTimes[i+1];
+        let s0 = sunPosition(lat, long, t0)[0], s1 = sunPosition(lat, long, t1)[0];
+        if (s0 >= angle && s1 <= angle) {
+            while (t1.diff(t0).as("milliseconds") > 1) {
+                let avg = DateTime.fromMillis((t0.toMillis() + t1.toMillis())/2, {zone: date.zone});
+                if (sunPosition(lat, long, avg)[0] < angle) {t1 = avg;}
+                else {t0 = avg;}
+            }
+            duskTimes.push(t0);
+        }
     }
-    return dusk;
+    return duskTimes;
 }
 
 function sunrise(lat: number, long: number, date: DateTime) {return dawn(lat, long, date, -5/6);} 
@@ -384,17 +424,7 @@ function astroDusk(lat: number, long: number, date: DateTime) {return dusk(lat, 
  * @returns Seconds of daylight (0 - 86400)
  */
 function dayLength(lat: number, long: number, date: DateTime) { 
-    let rise = dawn(lat, long, date, -5/6);
-    let set = dusk(lat, long, date, -5/6);
-    if (rise.toMillis() == N_POLAR_NIGHT || set.toMillis() == N_POLAR_NIGHT) {return 0;}
-    else if (rise.toMillis() == N_MIDNIGHT_SUN || set.toMillis() == N_MIDNIGHT_SUN) {return 86400;}
-    else if (rise.toMillis() == N_UNDEFINED || set.toMillis() == N_UNDEFINED) {return N_UNDEFINED;}
-    else { 
-        // If the sun rises and sets. This is always the case in latitudes within (90-axialTilt-5/6) degrees of the equator.
-        let length = set.diff(rise).as("seconds");
-        if (length >= 86400) {return 86400;}
-        return length;
-    }
+    return 0; // placeholder
 }
 
 /**
