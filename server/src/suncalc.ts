@@ -143,19 +143,25 @@ function meanSolarTimeOffset(longitude: number): number {
  * @param date Luxon DateTime object.
  * @returns 
  */
-function solarNoon(longitude: number, date: DateTime): DateTime {
-    // Create a DateTime object representing 12:00 local time on the given date.
-    let noon = DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 12}, {zone: date.zone});
-    let offset = noon.offset / 60;
+function solarNoon(longitude: number, date: DateTime): DateTime[] {
+    let beginningOfDay = DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 0}, {zone: date.zone});
+    let endOfDay;
+    if (beginningOfDay.hour == 1) {endOfDay = beginningOfDay.plus({hours: 23});}
+    else {endOfDay = beginningOfDay.plus({days: 1});}
+    let dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 24 hours, can be 23 or 25 with DST
+    let st00 = solarTime(longitude, beginningOfDay);
+    let st24 = solarTime(longitude, endOfDay);
+    let solarNoons = [];
 
-    // Use longitude and time zone to calculate the time of apparent solar noon.
-    let timeOffset = 4*(15*offset-longitude); // difference between clock noon and mean solar noon, in minutes. Example, if offset is -7 and longitude is -120, mean solar noon is 4*(15*(-7)-(-120)) = 4*(-105+120) = 4*15 = 60 minutes after noon on the clock.
-    if (longitude < -90 && offset > 6) {timeOffset -= 1440;} // far western hemisphere locations with eastern time zones (for example, some Pacific Island countries)
-    else if (longitude > 90 && offset < -6) {timeOffset += 1440;} // far eastern hemisphere locations with western time zones (for example, the far western Aleutian islands)
-    noon = noon.plus({minutes: timeOffset}); // adds timeOffset to the value of noon to find mean solar noon
-    let timeEq = equationOfTime(noon);
-    noon = noon.minus({minutes: timeEq});
-    return noon;
+    if (st00 > 600 && st00 <= 720 && st24 > 720 && st24 < 840) { // 2 solar noons in a day
+        
+    }
+    else if (st00 > 720 && st00 < 840 && st24 > 600 && st00 <= 720) { // 0 solar noons in a day
+        return [];
+    }
+    else { // 1 solar noon in a day
+
+    }
 }
 
 /**
@@ -166,19 +172,8 @@ function solarNoon(longitude: number, date: DateTime): DateTime {
  * @param date 
  * @returns 
  */
-function solarMidnight(longitude: number, date: DateTime): DateTime {
-    // The "minus(1)" in the formula for midnight below sets the time to 23:59:59.999 on the previous day. 
-    // This is required because some countries, such as Chile and Lebanon, institute DST changes at midnight, so the day may actually start at 01:00:00.
-    let midnight = DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 0}, {zone: date.zone}).minus(1);
-    let offset = midnight.offset / 60;
-
-    let timeOffset = 4*(15*offset-longitude);
-    if (longitude < -90 && offset > 6) {timeOffset -= 1440;}
-    else if (longitude > 90 && offset < -6) {timeOffset += 1440;}
-    midnight = midnight.plus({minutes: timeOffset, milliseconds: 1}); // add back the one millisecond lost previously
-    let timeEq = equationOfTime(midnight);
-    midnight = midnight.minus({minutes: timeEq});
-    return midnight;
+function solarMidnight(longitude: number, date: DateTime): DateTime[] {
+    
 }
 
 /**
@@ -278,6 +273,43 @@ function maxSunElevTime(lat: number, long: number, date: DateTime): DateTime[] {
         }
     }
     return peaks;
+}
+
+/**
+ * Calculates the time(s) at which the solar elevation angle reaches its minimum. In the polar regions, this may be significantly
+ * different from solar midnight, because the sun's declination change over the course of a day starts affecting solar angle more 
+ * than its longitudinal movement.
+ * @param lat Latitude in degrees
+ * @param long Longitude in degrees
+ * @param date Luxon DateTime object representing date
+ * @returns Luxon DateTime object for time of max solar elevation
+ */
+function minSunElevTime(lat: number, long: number, date: DateTime): DateTime[] {
+    let intervals = [], derivatives = [], minimums = [];
+    for (let h=0; h<=21; h+=3) {
+        intervals.push(DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: h},{zone: date.zone}));
+    }
+    intervals.push(DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 0},{zone: date.zone}).plus({days: 1}));
+    for (let i=0; i<9; i++) {
+        let diff = sunPosition(lat, long, intervals[i].plus(500))[0] - sunPosition(lat, long, intervals[i].minus(500))[0];
+        derivatives.push(diff);
+    }
+    for (let j=0; j<8; j++) {
+        if (derivatives[j] < 0 && derivatives[j+1] >= 0) { // if derivative changes from - to + within 3-hour period
+            // binary search to find where derivative = 0 (i.e. max sun height)
+            let t1 = 0;
+            let t2 = intervals[j+1].diff(intervals[j]).as("milliseconds");
+            let m = intervals[j];
+            while (t2 - t1 >= 100) {
+                m = intervals[j].plus((t1+t2)/2);
+                let deriv = sunPosition(lat, long, m.plus(500))[0] - sunPosition(lat, long, m.minus(500))[0];
+                if (deriv >= 0) {t1 = (t1+t2)/2;} // sun's altitude is still increasing
+                else {t2 = (t1+t2)/2;} // sun's altitude is now decreasing
+            }
+            minimums.push(m);
+        }
+    }
+    return minimums;
 }
 
 /**
