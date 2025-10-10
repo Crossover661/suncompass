@@ -21,7 +21,7 @@ import {clamp, mod, mins, jCentury, approxDeltaT} from "./mathfuncs.js";
 import {DateTime} from "luxon";
 import {degToRad, sunPeriodicTerms} from "./constants.js";
 import * as fs from "fs";
-import { nodeModuleNameResolver } from "../../node_modules/typescript/lib/typescript.js";
+import { nodeModuleNameResolver, NumericLiteral } from "../../node_modules/typescript/lib/typescript.js";
 
 const N_POLAR_NIGHT = 2**52-1;
 const N_MIDNIGHT_SUN = 2**52+1;
@@ -416,15 +416,31 @@ function astroDawn(lat: number, long: number, date: DateTime) {return dawn(lat, 
 function astroDusk(lat: number, long: number, date: DateTime) {return dusk(lat, long, date, -18);}
 
 /**
- * Returns day length in seconds (time from sunrise to sunset). If sunset is after midnight or sunrise is before midnight (due to time
- * zone complexities and DST), it returns the number of seconds the sun is up from solar midnight to the next solar midnight.
+ * Returns day length in seconds (time from sunrise to sunset). If sunset is after midnight or sunrise is before midnight (due to
+ * time zone complexities and DST), it returns the number of seconds the sun is up from solar midnight to the next solar midnight.
  * @param lat Latitude in degrees
  * @param long Longitude in degrees
  * @param date Luxon DateTime object representing date
- * @returns Seconds of daylight (0 - 86400)
+ * @returns Seconds of daylight (0 - 86400 exclusive) or -1 if undefined
  */
-function dayLength(lat: number, long: number, date: DateTime) { 
-    return 0; // placeholder
+function dayLength(lat: number, long: number, date: DateTime) {
+    let rise = sunrise(lat, long, date);
+    let set = sunset(lat, long, date);
+    if (rise.length == 0 && set.length == 0) {
+        if (sunPosition(lat, long, date)[0] >= -5/6) {return 86400;} // midnight sun
+        else {return 0;} // polar night
+    }
+    else if (rise.length >= 1 && set.length == 1 && set[0] >= rise[0]) {return set[0].diff(rise[0]).as("seconds");}
+    else if (rise.length == 1 && set.length == 2 && set[1] >= rise[0]) {return set[1].diff(rise[0]).as("seconds");}
+
+    // If sunset after midnight or sunrise before midnight
+    let rise_y = sunrise(lat, long, date.minus({days: 1})); // sunrise yesterday
+    let set_t = sunset(lat, long, date.plus({days: 1})); // sunset tomorrow
+    if (set_t.length >= 1 && rise.length >= 1 && rise[0].hour <= 11) {return set_t[0].diff(rise[0]).as("seconds");}
+    else if (rise_y.length >= 1 && set.length >= 1 && set[0].hour >= 12) {return set[0].diff(rise_y[rise_y.length-1]).as("seconds");}
+
+    // If undefined (ex. sunrise but no sunset, or vice versa)
+    return -1;
 }
 
 /**
