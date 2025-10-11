@@ -88,6 +88,16 @@ function displayDuration(duration: any) {
     else {return duration.toFormat("h:mm:ss");}
 }
 
+/** Returns a Luxon DateTime corresponding to the beginning of the given day. */
+function startOfDay(date: DateTime) {
+    return date.set({hour: 0, minute: 0, second: 0, millisecond: 0});
+}
+
+/** Returns a Luxon DateTime corresponding to the beginning of the next day. */
+function startNextDay(date: DateTime) {
+    return date.plus({days: 1}).set({hour: 0, minute: 0, second: 0, millisecond: 0});
+}
+
 /** This function finds the approximate value of delta T, the difference between terrestrial time (recorded by atomic clocks)
 and mean solar time (based on the Earth's rotation). This function's margin of error is 4.8 seconds in 2024, based on the
 value this function returns (73.8 seconds) versus the real value (69 seconds). The margin of error increases for years before
@@ -149,4 +159,5 @@ function approxDeltaT(JC: number) {
     }
 }
 
-export {intDiv, clamp, mod, JD, JDN, jCentury, mins, direction, displayTime, displayDuration, approxDeltaT};
+export {intDiv, clamp, mod, JD, JDN, jCentury, mins, direction, displayTime, displayDuration, startOfDay, startNextDay, 
+    approxDeltaT};

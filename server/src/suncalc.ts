@@ -17,7 +17,7 @@ durations, conversion between different time zones, and complexities such as day
 the time zone of a geographic coordinate.
 */
 
-import {clamp, mod, mins, jCentury, approxDeltaT} from "./mathfuncs.js";
+import {clamp, mod, mins, jCentury, approxDeltaT, startOfDay, startNextDay} from "./mathfuncs.js";
 import {DateTime} from "luxon";
 import {degToRad, sunPeriodicTerms} from "./constants.js";
 import * as fs from "fs";
@@ -146,10 +146,9 @@ function meanSolarTimeOffset(longitude: number): number {
  * @returns 
  */
 function solarNoon(lat: number, long: number, date: DateTime): SunTime[] {
-    let beginningOfDay = DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 0}, {zone: date.zone});
-    let endOfDay = beginningOfDay.plus({days: 1});
-    if (endOfDay.hour != 0) {endOfDay = endOfDay.minus({hours: endOfDay.hour});}
-    let dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 24 hours, can be 23 or 25 with DST
+    let beginningOfDay = startOfDay(date);
+    let endOfDay = startNextDay(date);
+    let dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 1440, can be 1380 or 1500 with DST
     let st00 = solarTime(long, beginningOfDay);
     let st24 = solarTime(long, endOfDay);
     let stDiff = mod((st24 - st00 - 720), 1440) + 720;
@@ -181,11 +180,9 @@ function solarNoon(lat: number, long: number, date: DateTime): SunTime[] {
  * @returns 
  */
 function solarMidnight(lat: number, long: number, date: DateTime): SunTime[] {
-    let beginningOfDay = DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 0}, {zone: date.zone});
-    let endOfDay = beginningOfDay.plus({days: 1});
-    if (endOfDay.hour != 0) {endOfDay = endOfDay.minus({hours: endOfDay.hour});}
-    else {endOfDay = beginningOfDay.plus({days: 1});}
-    let dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 24 hours, can be 23 or 25 with DST
+    let beginningOfDay = startOfDay(date);
+    let endOfDay = startNextDay(date);
+    let dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 1440, can be 1380 or 1500 with DST
     let st00 = solarTime(long, beginningOfDay);
     let st24 = solarTime(long, endOfDay);
     let stDiff = mod((st24 - st00 - 720), 1440) + 720;
@@ -282,17 +279,17 @@ function derivative(lat: number, long: number, date: DateTime) {
  * elevation angle is 0, and the start of the next day. This is a helper function for "dawn" and "dusk" functions below.
  */
 function maxAndMin(lat: number, long: number, date: DateTime): DateTime[] {
-    let startOfDay = DateTime.fromObject({year: date.year, month: date.month, day: date.day, hour: 0}, {zone: date.zone});
-    let endOfDay = startOfDay.plus({days: 1});
+    let beginningOfDay = startOfDay(date);
+    let endOfDay = startNextDay(date);
     if (endOfDay.hour != 0) {endOfDay = endOfDay.minus({hours: endOfDay.hour});} // daylight saving time adjustment
-    let times = [startOfDay];
+    let times = [beginningOfDay];
     let intervals = [
-        startOfDay,
-        startOfDay.plus({hours: 4}),
-        startOfDay.plus({hours: 8}),
-        startOfDay.plus({hours: 12}),
-        startOfDay.plus({hours: 16}),
-        startOfDay.plus({hours: 20}),
+        beginningOfDay,
+        beginningOfDay.plus({hours: 4}),
+        beginningOfDay.plus({hours: 8}),
+        beginningOfDay.plus({hours: 12}),
+        beginningOfDay.plus({hours: 16}),
+        beginningOfDay.plus({hours: 20}),
         endOfDay
     ];
     for (let i=0; i<intervals.length-1; i++) {
