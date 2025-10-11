@@ -25,8 +25,6 @@ import { nodeModuleNameResolver, NumericLiteral } from "../../node_modules/types
 import { time } from "console";
 import SunTime from "./SunTime.js"
 
-const N_POLAR_NIGHT = 2**52-1;
-const N_MIDNIGHT_SUN = 2**52+1;
 const N_UNDEFINED = 2**52;
 
 function meanSunLongitude(JC: number): number {

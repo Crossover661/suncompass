@@ -21,8 +21,6 @@ import { DateTime } from "luxon";
 import { degToRad, sunPeriodicTerms } from "./constants.js";
 import * as fs from "fs";
 import SunTime from "./SunTime.js";
-const N_POLAR_NIGHT = 2 ** 52 - 1;
-const N_MIDNIGHT_SUN = 2 ** 52 + 1;
 const N_UNDEFINED = 2 ** 52;
 function meanSunLongitude(JC) {
     JC += (approxDeltaT(JC) / 3155760000); // division by 3155760000 converts seconds to Julian centuries
