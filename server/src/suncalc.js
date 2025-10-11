@@ -20,6 +20,7 @@ import { clamp, mod, mins, jCentury, approxDeltaT } from "./mathfuncs.js";
 import { DateTime } from "luxon";
 import { degToRad, sunPeriodicTerms } from "./constants.js";
 import * as fs from "fs";
+import SunTime from "./SunTime.js";
 const N_POLAR_NIGHT = 2 ** 52 - 1;
 const N_MIDNIGHT_SUN = 2 ** 52 + 1;
 const N_UNDEFINED = 2 ** 52;
@@ -137,10 +138,10 @@ function meanSolarTimeOffset(longitude) {
 /**
  * Returns the time(s) of solar noon as a DateTime object.
  * @param longitude Longitude in degrees.
- * @param date Luxon DateTime object.
+ * @param date SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for solar noon.
  * @returns
  */
-function solarNoon(longitude, date) {
+function solarNoon(lat, long, date) {
     let beginningOfDay = DateTime.fromObject({ year: date.year, month: date.month, day: date.day, hour: 0 }, { zone: date.zone });
     let endOfDay;
     if (beginningOfDay.hour == 1) {
@@ -150,30 +151,36 @@ function solarNoon(longitude, date) {
         endOfDay = beginningOfDay.plus({ days: 1 });
     }
     let dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 24 hours, can be 23 or 25 with DST
-    let st00 = solarTime(longitude, beginningOfDay);
-    let st24 = solarTime(longitude, endOfDay);
+    let st00 = solarTime(long, beginningOfDay);
+    let st24 = solarTime(long, endOfDay);
     let stDiff = mod((st24 - st00 - 720), 1440) + 720;
     let solarTimeRate = stDiff / dayLength; // the rate at which solar time changes through the day, relative to actual time
     if (st00 > 600 && st00 <= 720 && st24 > 720 && st24 < 840) { // 2 solar noons in a day
         let solarNoon0 = beginningOfDay.plus({ minutes: (720 - st00) / solarTimeRate });
         let solarNoon1 = endOfDay.minus({ minutes: (st24 - 720) / solarTimeRate });
-        return [solarNoon0, solarNoon1];
+        let sunPos0 = sunPosition(lat, long, solarNoon0); // solar elevation/azimuth at solarNoon0
+        let sunPos1 = sunPosition(lat, long, solarNoon1); // solar elevation/azimuth at solarNoon1
+        return [
+            new SunTime(solarNoon0, sunPos0[0], sunPos0[1], "Solar Noon"),
+            new SunTime(solarNoon1, sunPos1[0], sunPos1[1], "Solar Noon")
+        ];
     }
     else if (st00 > 720 && st00 < 840 && st24 > 600 && st00 <= 720) { // 0 solar noons in a day
         return [];
     }
     else { // 1 solar noon in a day
         let solarNoon = beginningOfDay.plus({ minutes: mod(720 - st00, 1440) / solarTimeRate });
-        return [solarNoon];
+        let sunPos = sunPosition(lat, long, solarNoon);
+        return [new SunTime(solarNoon, sunPos[0], sunPos[1], "Solar Noon")];
     }
 }
 /**
  * Returns the time(s) of solar midnight as a DateTime object.
  * @param longitude Longitude in degrees.
- * @param date Luxon DateTime object.
+ * @param date SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for solar midnight.
  * @returns
  */
-function solarMidnight(longitude, date) {
+function solarMidnight(lat, long, date) {
     let beginningOfDay = DateTime.fromObject({ year: date.year, month: date.month, day: date.day, hour: 0 }, { zone: date.zone });
     let endOfDay;
     if (beginningOfDay.hour == 1) {
@@ -183,21 +190,27 @@ function solarMidnight(longitude, date) {
         endOfDay = beginningOfDay.plus({ days: 1 });
     }
     let dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 24 hours, can be 23 or 25 with DST
-    let st00 = solarTime(longitude, beginningOfDay);
-    let st24 = solarTime(longitude, endOfDay);
+    let st00 = solarTime(long, beginningOfDay);
+    let st24 = solarTime(long, endOfDay);
     let stDiff = mod((st24 - st00 - 720), 1440) + 720;
     let solarTimeRate = stDiff / dayLength; // the rate at which solar time changes through the day, relative to actual time
     if (st00 > 1320 && st24 < 120) { // 2 solar midnights in a day
         let solarMidnight0 = beginningOfDay.plus({ minutes: (1440 - st00) / solarTimeRate });
         let solarMidnight1 = endOfDay.minus({ minutes: st24 / solarTimeRate });
-        return [solarMidnight0, solarMidnight1];
+        let sunPos0 = sunPosition(lat, long, solarMidnight0); // solar elevation/azimuth at solarMidnight0
+        let sunPos1 = sunPosition(lat, long, solarMidnight1); // solar elevation/azimuth at solarMidnight1
+        return [
+            new SunTime(solarMidnight0, sunPos0[0], sunPos0[1], "Solar Midnight"),
+            new SunTime(solarMidnight1, sunPos1[0], sunPos1[1], "Solar Midnight")
+        ];
     }
     else if (st00 < 120 && st24 > 1320) { // 0 solar midnights in a day
         return [];
     }
     else { // 1 solar midnight in a day
         let solarMidnight = endOfDay.minus({ minutes: st24 / solarTimeRate });
-        return [solarMidnight];
+        let sunPos = sunPosition(lat, long, solarMidnight);
+        return [new SunTime(solarMidnight, sunPos[0], sunPos[1], "Solar Midnight")];
     }
 }
 /**
@@ -364,6 +377,7 @@ function maxAndMin(lat, long, date) {
     if (endOfDay.hour == 1) {
         endOfDay = endOfDay.minus({ hours: 1 });
     }
+    times.push(endOfDay);
     let sortedTimes = times.sort((a, b) => a.toMillis() - b.toMillis());
     return sortedTimes;
 }
@@ -374,15 +388,15 @@ function maxAndMin(lat, long, date) {
  * @param long Longitude in degrees
  * @param date Luxon DateTime object
  * @param angle Solar elevation angle in degrees
- * @returns A Luxon DateTime object representing the sunrise/dawn time.
+ * @returns SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for the type of dawn/sunrise.
  */
-function dawn(lat, long, date, angle) {
+function dawn(lat, long, date, angle, type) {
     let maxAndMinTimes = maxAndMin(lat, long, date);
     let dawnTimes = [];
     for (let i = 0; i < maxAndMinTimes.length - 1; i++) {
         let t0 = maxAndMinTimes[i], t1 = maxAndMinTimes[i + 1];
-        let s0 = sunPosition(lat, long, t0)[0], s1 = sunPosition(lat, long, t1)[0];
-        if (s0 <= angle && s1 >= angle) {
+        let s0 = sunPosition(lat, long, t0), s1 = sunPosition(lat, long, t1);
+        if (s0[0] <= angle && s1[0] >= angle) {
             while (t1.diff(t0).as("milliseconds") > 1) {
                 let avg = DateTime.fromMillis((t0.toMillis() + t1.toMillis()) / 2, { zone: date.zone });
                 if (sunPosition(lat, long, avg)[0] < angle) {
@@ -392,7 +406,8 @@ function dawn(lat, long, date, angle) {
                     t1 = avg;
                 }
             }
-            dawnTimes.push(t0);
+            let sunPos = sunPosition(lat, long, t0);
+            dawnTimes.push(new SunTime(t0, sunPos[0], sunPos[1], type));
         }
     }
     return dawnTimes;
@@ -404,9 +419,9 @@ function dawn(lat, long, date, angle) {
  * @param long Longitude in degrees
  * @param date Luxon DateTime object
  * @param angle Solar elevation angle in degrees
- * @returns A Luxon DateTime object representing the sunrise/dawn time
+ * @returns SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for the type of dusk/sunset.
  */
-function dusk(lat, long, date, angle) {
+function dusk(lat, long, date, angle, type) {
     let maxAndMinTimes = maxAndMin(lat, long, date);
     let duskTimes = [];
     for (let i = 0; i < maxAndMinTimes.length - 1; i++) {
@@ -422,19 +437,20 @@ function dusk(lat, long, date, angle) {
                     t0 = avg;
                 }
             }
-            duskTimes.push(t0);
+            let sunPos = sunPosition(lat, long, t0);
+            duskTimes.push(new SunTime(t0, sunPos[0], sunPos[1], type));
         }
     }
     return duskTimes;
 }
-function sunrise(lat, long, date) { return dawn(lat, long, date, -5 / 6); }
-function sunset(lat, long, date) { return dusk(lat, long, date, -5 / 6); }
-function civilDawn(lat, long, date) { return dawn(lat, long, date, -6); }
-function civilDusk(lat, long, date) { return dusk(lat, long, date, -6); }
-function nauticalDawn(lat, long, date) { return dawn(lat, long, date, -12); }
-function nauticalDusk(lat, long, date) { return dusk(lat, long, date, -12); }
-function astroDawn(lat, long, date) { return dawn(lat, long, date, -18); }
-function astroDusk(lat, long, date) { return dusk(lat, long, date, -18); }
+function sunrise(lat, long, date) { return dawn(lat, long, date, -5 / 6, "Sunrise"); }
+function sunset(lat, long, date) { return dusk(lat, long, date, -5 / 6, "Sunset"); }
+function civilDawn(lat, long, date) { return dawn(lat, long, date, -6, "Civil Dawn"); }
+function civilDusk(lat, long, date) { return dusk(lat, long, date, -6, "Civil Dusk"); }
+function nauticalDawn(lat, long, date) { return dawn(lat, long, date, -12, "Nautical Dawn"); }
+function nauticalDusk(lat, long, date) { return dusk(lat, long, date, -12, "Nautical Dusk"); }
+function astroDawn(lat, long, date) { return dawn(lat, long, date, -18, "Astro Dawn"); }
+function astroDusk(lat, long, date) { return dusk(lat, long, date, -18, "Astro Dusk"); }
 /**
  * Returns day length in seconds (time from sunrise to sunset). If sunset is after midnight or sunrise is before midnight (due to
  * time zone complexities and DST), it returns the number of seconds the sun is up from solar midnight to the next solar midnight.
@@ -454,43 +470,44 @@ function dayLength(lat, long, date) {
             return 0;
         } // polar night
     }
-    else if (rise.length >= 1 && set.length == 1 && set[0] >= rise[0]) {
-        return set[0].diff(rise[0]).as("seconds");
+    else if (rise.length >= 1 && set.length == 1 && set[0].time >= rise[0].time) {
+        return set[0].time.diff(rise[0].time).as("seconds");
     }
-    else if (rise.length == 1 && set.length == 2 && set[1] >= rise[0]) {
-        return set[1].diff(rise[0]).as("seconds");
+    else if (rise.length == 1 && set.length == 2 && set[1].time >= rise[0].time) {
+        return set[1].time.diff(rise[0].time).as("seconds");
     }
     // If sunset after midnight or sunrise before midnight
     let rise_y = sunrise(lat, long, date.minus({ days: 1 })); // sunrise yesterday
     let set_t = sunset(lat, long, date.plus({ days: 1 })); // sunset tomorrow
-    if (set_t.length >= 1 && rise.length >= 1 && rise[0].hour <= 11) {
-        return set_t[0].diff(rise[0]).as("seconds");
+    if (set_t.length >= 1 && rise.length >= 1 && rise[0].time.hour <= 11) {
+        return set_t[0].time.diff(rise[0].time).as("seconds");
     }
-    else if (rise_y.length >= 1 && set.length >= 1 && set[0].hour >= 12) {
-        return set[0].diff(rise_y[rise_y.length - 1]).as("seconds");
+    else if (rise_y.length >= 1 && set.length >= 1 && set[0].time.hour >= 12) {
+        return set[0].time.diff(rise_y[rise_y.length - 1].time).as("seconds");
     }
     // If undefined (ex. sunrise but no sunset, or vice versa)
     return -1;
 }
 /**
  * Returns the times of all sun-events in the day: sunrise, sunset, civil/nautical/astronomical twilight, solar noon, and solar midnight.
- * @param lat
- * @param long
- * @param date
+ * @param lat Latitude in degrees
+ * @param long Longitude in degrees
+ * @param date The date of the events
  */
 function allSunEvents(lat, long, date) {
-    let events = [];
-    let midnight = solarMidnight(long, date);
+    let midnight = solarMidnight(lat, long, date);
     let adawn = astroDawn(lat, long, date);
     let ndawn = nauticalDawn(lat, long, date);
     let cdawn = civilDawn(lat, long, date);
     let rise = sunrise(lat, long, date);
-    let noon = solarNoon(long, date);
+    let noon = solarNoon(lat, long, date);
     let set = sunset(lat, long, date);
     let cdusk = civilDusk(lat, long, date);
     let ndusk = nauticalDusk(lat, long, date);
     let adusk = astroDusk(lat, long, date);
-    return 0;
+    let events = [...midnight, ...adawn, ...ndawn, ...cdawn, ...rise, ...noon, ...set, ...cdusk, ...ndusk, ...adusk];
+    events.sort((a, b) => a.valueOf() - b.valueOf());
+    return events;
 }
 /**
  * Returns the time of the March equinox in given year and time zone
@@ -620,4 +637,4 @@ function getSolsticeEquinox(year, month, zone = "utc") {
         return DateTime.fromMillis(N_UNDEFINED);
     }
 }
-export { sunDistance, sunLongitude, axialTilt, declination, equationOfTime, meanSunAnomaly, sunAngularRadius, meanSolarTimeOffset, solarTime, solarNoon, solarMidnight, subsolarPoint, sunPosition, refraction, refract, dawn, dusk, sunrise, sunset, civilDawn, civilDusk, nauticalDawn, nauticalDusk, astroDawn, astroDusk, dayLength, marEquinox, junSolstice, sepEquinox, decSolstice, getSolsticeEquinox };
+export { sunDistance, sunLongitude, axialTilt, declination, equationOfTime, meanSunAnomaly, sunAngularRadius, meanSolarTimeOffset, solarTime, solarNoon, solarMidnight, subsolarPoint, sunPosition, refraction, refract, dawn, dusk, sunrise, sunset, civilDawn, civilDusk, nauticalDawn, nauticalDusk, astroDawn, astroDusk, dayLength, allSunEvents, marEquinox, junSolstice, sepEquinox, decSolstice, getSolsticeEquinox };
