@@ -52,7 +52,7 @@ let dist = suncalc.sunDistance(date);
 console.log(zone);
 console.log(date.toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS));
 console.log("Current sun elevation: " + elev.toFixed(4) + "°" + " (After refraction: " + apparentElev.toFixed(4) + "°)");
-console.log("Current sun azimuth: " + az.toFixed(4) + "° (" + direction(az) + ")");
+console.log("Current sun bearing: " + az.toFixed(4) + "° (" + direction(az) + ")");
 console.log("Subsolar point: " + subsolarPoint[0].toFixed(4) + ", " + subsolarPoint[1].toFixed(4));
 console.log("Sun-earth distance: " + dist.toFixed(0) + " km (" + (dist/1.609344).toFixed(0) + " mi)");
 
