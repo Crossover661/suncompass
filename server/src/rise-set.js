@@ -57,14 +57,19 @@ console.log("Subsolar point: " + subsolarPoint[0].toFixed(4) + ", " + subsolarPo
 console.log("Sun-earth distance: " + dist.toFixed(0) + " km (" + (dist/1.609344).toFixed(0) + " mi)");
 
 // Print day length
-console.log("Day Length: " + Duration.fromObject({seconds: Math.round(suncalc.dayLength(lat, long, date))}).toFormat("h:mm:ss"));
+let dayLength = Math.round(suncalc.dayLength(lat, long, date));
+if (dayLength == -1) {console.log("Day Length: undefined");}
+else {console.log("Day Length: " + Duration.fromObject({seconds: dayLength}).toFormat("h:mm:ss"));}
 console.log("");
 
 // Print sunrise, sunset, solar noon, solar midnight, and twilight times
 let solarEvents = suncalc.allSunEvents(lat, long, date);
 console.log("         Event |        Time | Elevation |       Bearing"); // header
 for (let event of solarEvents) {
-    if (event.eventType == "Sunrise" || event.eventType == "Sunset") {console.log(event.toStringFormatted(true, 255, 255, 0));}
-    else if (event.eventType == "Solar Noon") {console.log(event.toStringFormatted(true, 255, 255, 255));}
-    else {console.log(event.toStringFormatted(false, 128, 128, 128));}
+    let bold = false;
+    if (event.eventType == "Sunrise" || event.eventType == "Sunset" || event.eventType == "Solar Noon") {bold = true};
+    let [r, g, b] = [128, 128, 128];
+    if (event.eventType == "Sunrise" || event.eventType == "Sunset") {[r, g, b] = [255, 255, 0];}
+    else if (event.solarElevation >= -5/6) {[r, g, b] = [255, 255, 255];}
+    console.log(event.toStringFormatted(bold, r, g, b));
 }

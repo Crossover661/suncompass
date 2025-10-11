@@ -143,12 +143,9 @@ function meanSolarTimeOffset(longitude) {
  */
 function solarNoon(lat, long, date) {
     let beginningOfDay = DateTime.fromObject({ year: date.year, month: date.month, day: date.day, hour: 0 }, { zone: date.zone });
-    let endOfDay;
-    if (beginningOfDay.hour == 1) {
-        endOfDay = beginningOfDay.plus({ hours: 23 });
-    }
-    else {
-        endOfDay = beginningOfDay.plus({ days: 1 });
+    let endOfDay = beginningOfDay.plus({ days: 1 });
+    if (endOfDay.hour != 0) {
+        endOfDay = endOfDay.minus({ hours: endOfDay.hour });
     }
     let dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 24 hours, can be 23 or 25 with DST
     let st00 = solarTime(long, beginningOfDay);
@@ -165,7 +162,7 @@ function solarNoon(lat, long, date) {
             new SunTime(solarNoon1, sunPos1[0], sunPos1[1], "Solar Noon")
         ];
     }
-    else if (st00 > 720 && st00 < 840 && st24 > 600 && st00 <= 720) { // 0 solar noons in a day
+    else if (st00 > 720 && st00 < 840 && st24 > 600 && st24 <= 720) { // 0 solar noons in a day
         return [];
     }
     else { // 1 solar noon in a day
@@ -182,9 +179,9 @@ function solarNoon(lat, long, date) {
  */
 function solarMidnight(lat, long, date) {
     let beginningOfDay = DateTime.fromObject({ year: date.year, month: date.month, day: date.day, hour: 0 }, { zone: date.zone });
-    let endOfDay;
-    if (beginningOfDay.hour == 1) {
-        endOfDay = beginningOfDay.plus({ hours: 23 });
+    let endOfDay = beginningOfDay.plus({ days: 1 });
+    if (endOfDay.hour != 0) {
+        endOfDay = endOfDay.minus({ hours: endOfDay.hour });
     }
     else {
         endOfDay = beginningOfDay.plus({ days: 1 });
@@ -277,109 +274,63 @@ function refraction(elev) {
 function refract(elev) {
     return elev + refraction(elev);
 }
-/**
- * Calculates the time(s) at which the solar elevation angle reaches its maximum. In the polar regions, this may be significantly
- * different from solar noon, because the sun's declination change over the course of a day starts affecting solar angle more
- * than its longitudinal movement.
- * @param lat Latitude in degrees
- * @param long Longitude in degrees
- * @param date Luxon DateTime object representing date
- * @returns Luxon DateTime object for time of max solar elevation
- */
-function maxSunElevTime(lat, long, date) {
-    let intervals = [], derivatives = [], peaks = [];
-    // use gradient ascent and binary search to find max solar angle time
-    for (let h = 0; h <= 21; h += 3) {
-        intervals.push(DateTime.fromObject({ year: date.year, month: date.month, day: date.day, hour: h }, { zone: date.zone }));
-    }
-    intervals.push(DateTime.fromObject({ year: date.year, month: date.month, day: date.day, hour: 0 }, { zone: date.zone }).plus({ days: 1 }));
-    for (let i = 0; i < 9; i++) {
-        let diff = sunPosition(lat, long, intervals[i].plus(500))[0] - sunPosition(lat, long, intervals[i].minus(500))[0];
-        derivatives.push(diff);
-    }
-    for (let j = 0; j < 8; j++) {
-        if (derivatives[j] >= 0 && derivatives[j + 1] < 0) { // if derivative changes from + to - within 3-hour period
-            // binary search to find where derivative = 0 (i.e. max sun height)
-            let t1 = 0;
-            let t2 = intervals[j + 1].diff(intervals[j]).as("milliseconds");
-            let m = intervals[j];
-            while (t2 - t1 >= 100) {
-                m = intervals[j].plus((t1 + t2) / 2);
-                let deriv = sunPosition(lat, long, m.plus(500))[0] - sunPosition(lat, long, m.minus(500))[0];
-                if (deriv >= 0) {
-                    t1 = (t1 + t2) / 2;
-                } // sun's altitude is still increasing
-                else {
-                    t2 = (t1 + t2) / 2;
-                } // sun's altitude is now decreasing
-            }
-            peaks.push(m);
-        }
-    }
-    return peaks;
+/** Returns the approximate derivative of the solar elevation angle at a particular time, in degrees per second. */
+function derivative(lat, long, date) {
+    return sunPosition(lat, long, date.plus(500))[0] - sunPosition(lat, long, date.minus(500))[0];
 }
 /**
- * Calculates the time(s) at which the solar elevation angle reaches its minimum. In the polar regions, this may be significantly
- * different from solar midnight, because the sun's declination change over the course of a day starts affecting solar angle more
- * than its longitudinal movement.
- * @param lat Latitude in degrees
- * @param long Longitude in degrees
- * @param date Luxon DateTime object representing date
- * @returns Luxon DateTime object for time of max solar elevation
- */
-function minSunElevTime(lat, long, date) {
-    let intervals = [], derivatives = [], minimums = [];
-    for (let h = 0; h <= 21; h += 3) {
-        intervals.push(DateTime.fromObject({ year: date.year, month: date.month, day: date.day, hour: h }, { zone: date.zone }));
-    }
-    intervals.push(DateTime.fromObject({ year: date.year, month: date.month, day: date.day, hour: 0 }, { zone: date.zone }).plus({ days: 1 }));
-    for (let i = 0; i < 9; i++) {
-        let diff = sunPosition(lat, long, intervals[i].plus(500))[0] - sunPosition(lat, long, intervals[i].minus(500))[0];
-        derivatives.push(diff);
-    }
-    for (let j = 0; j < 8; j++) {
-        if (derivatives[j] < 0 && derivatives[j + 1] >= 0) { // if derivative changes from - to + within 3-hour period
-            // binary search to find where derivative = 0 (i.e. max sun height)
-            let t1 = 0;
-            let t2 = intervals[j + 1].diff(intervals[j]).as("milliseconds");
-            let m = intervals[j];
-            while (t2 - t1 >= 100) {
-                m = intervals[j].plus((t1 + t2) / 2);
-                let deriv = sunPosition(lat, long, m.plus(500))[0] - sunPosition(lat, long, m.minus(500))[0];
-                if (deriv >= 0) {
-                    t1 = (t1 + t2) / 2;
-                } // sun's altitude is still increasing
-                else {
-                    t2 = (t1 + t2) / 2;
-                } // sun's altitude is now decreasing
-            }
-            minimums.push(m);
-        }
-    }
-    return minimums;
-}
-/**
- * Calculates the maximums and minimums of the solar elevation angle, including midnight local time. This is a helper function
- * for "dawn" and "dusk" functions below.
+ * Returns an array of DateTime objects, representing the start of the current day, the times at which the derivative of solar
+ * elevation angle is 0, and the start of the next day. This is a helper function for "dawn" and "dusk" functions below.
  */
 function maxAndMin(lat, long, date) {
     let startOfDay = DateTime.fromObject({ year: date.year, month: date.month, day: date.day, hour: 0 }, { zone: date.zone });
-    let times = [startOfDay];
-    let minimums = minSunElevTime(lat, long, date);
-    let maximums = maxSunElevTime(lat, long, date);
-    for (let min of minimums) {
-        times.push(min);
-    }
-    for (let max of maximums) {
-        times.push(max);
-    }
     let endOfDay = startOfDay.plus({ days: 1 });
-    if (endOfDay.hour == 1) {
-        endOfDay = endOfDay.minus({ hours: 1 });
+    if (endOfDay.hour != 0) {
+        endOfDay = endOfDay.minus({ hours: endOfDay.hour });
+    } // daylight saving time adjustment
+    let times = [startOfDay];
+    let intervals = [
+        startOfDay,
+        startOfDay.plus({ hours: 4 }),
+        startOfDay.plus({ hours: 8 }),
+        startOfDay.plus({ hours: 12 }),
+        startOfDay.plus({ hours: 16 }),
+        startOfDay.plus({ hours: 20 }),
+        endOfDay
+    ];
+    for (let i = 0; i < intervals.length - 1; i++) {
+        // use binary search to find the time closest to zero derivative
+        let d0 = derivative(lat, long, intervals[i]), d1 = derivative(lat, long, intervals[i + 1]);
+        let t0 = intervals[i], t1 = intervals[i + 1];
+        if (d0 >= 0 && d1 < 0) { // maximum (i.e. solar noon, or summer solstice at pole)
+            while (t1.diff(t0).as("milliseconds") > 1) {
+                let tAvg = DateTime.fromMillis((t0.toMillis() + t1.toMillis()) / 2, { zone: date.zone });
+                let dAvg = derivative(lat, long, tAvg);
+                if (dAvg >= 0) {
+                    t0 = tAvg;
+                }
+                else {
+                    t1 = tAvg;
+                }
+            }
+            times.push(t0);
+        }
+        else if (d0 <= 0 && d1 > 0) { // minimum (i.e. solar midnight, or winter solstice at pole)
+            while (t1.diff(t0).as("milliseconds") > 1) {
+                let tAvg = DateTime.fromMillis((t0.toMillis() + t1.toMillis()) / 2, { zone: date.zone });
+                let dAvg = derivative(lat, long, tAvg);
+                if (dAvg <= 0) {
+                    t0 = tAvg;
+                }
+                else {
+                    t1 = tAvg;
+                }
+            }
+            times.push(t0);
+        }
     }
     times.push(endOfDay);
-    let sortedTimes = times.sort((a, b) => a.toMillis() - b.toMillis());
-    return sortedTimes;
+    return times;
 }
 /**
  * Calculates the time in the morning at which the sun's elevation reaches the specified angle. Angle should be -5/6 for sunrise,
