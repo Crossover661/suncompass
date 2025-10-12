@@ -37,11 +37,6 @@ else {
     process.exit(1);
 }
 
-function stringify(date) {
-    if (Math.abs(date.toMillis()) >= 2**52-1) {return "----";}
-    else {return date.toFormat("h:mm:ss a");}
-}
-
 // Print subsolar point, sun's apparent elevation, and subsolar point
 
 let subsolarPoint = suncalc.subsolarPoint(date);
