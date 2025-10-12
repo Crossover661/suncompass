@@ -58,8 +58,8 @@ console.log("Sun-earth distance: " + dist.toFixed(0) + " km (" + (dist/1.609344)
 
 // Print day length
 let dayLength = Math.round(suncalc.dayLength(lat, long, date));
-if (dayLength == -1) {console.log("Day Length: undefined");}
-else {console.log("Day Length: " + Duration.fromObject({seconds: dayLength}).toFormat("h:mm:ss"));}
+if (dayLength == -1) {console.log("Day length: undefined");}
+else {console.log("Day length: " + Duration.fromObject({seconds: dayLength}).toFormat("h:mm:ss"));}
 console.log("");
 
 // Print sunrise, sunset, solar noon, solar midnight, and twilight times
