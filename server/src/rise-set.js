@@ -19,8 +19,8 @@ else if (args.length == 4) {
 }
 else if (args.length == 5) {
     /* Coordinates and date. Example: "node rise-set 40.75 -73.99" gives times for June 20, 2024 in New York City in EDT
-    The date argument can be replaced with "me" for March equinox, "js" for June solstice, "se" for Sep equinox, "ds" for Dec solstice,
-    or "continuous" for a continuously-updating display.
+    The date argument can be replaced with "me" for March equinox, "js" for June solstice, "se" for Sep equinox, "ds" for 
+    Dec solstice, or "continuous" for a continuously-updating display.
     The specific time can also be specified in the date. Examples:
     "2022-02-22T02:22:22" --> February 22, 2022 at 2:22:22 AM
     "2024-12-25T19:12:06" --> December 25, 2024 at 7:12:06 PM (19:12:06)

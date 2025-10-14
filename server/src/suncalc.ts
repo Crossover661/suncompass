@@ -324,6 +324,7 @@ function maxAndMin(lat: number, long: number, date: DateTime): DateTime[] {
  * @param long Longitude in degrees
  * @param date Luxon DateTime object
  * @param angle Solar elevation angle in degrees
+ * @param type "Sunrise", "Civil Dawn", "Nautical Dawn" or "Astro Dawn"
  * @returns SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for the type of dawn/sunrise.
  */
 function dawn(lat: number, long: number, date: DateTime, angle: number, type: string): SunTime[] {
@@ -352,6 +353,7 @@ function dawn(lat: number, long: number, date: DateTime, angle: number, type: st
  * @param long Longitude in degrees
  * @param date Luxon DateTime object
  * @param angle Solar elevation angle in degrees
+ * @param type "Sunset", "Civil Dusk", "Nautical Dusk", "Astro Dusk"
  * @returns SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for the type of dusk/sunset.
  */
 function dusk(lat: number, long: number, date: DateTime, angle: number, type: string): SunTime[] {
