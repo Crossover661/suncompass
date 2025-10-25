@@ -88,6 +88,11 @@ function displayDuration(duration: any) {
     else {return duration.toFormat("h:mm:ss");}
 }
 
+/** Returns the time of day in the DateTime as a number of milliseconds, from 0 (00:00:00.000) to 86399999 (23:59:59.999). */
+function convertToMS(date: DateTime) {
+    return 1000 * (date.hour * 3600 + date.minute * 60 + date.second) + date.millisecond;
+}
+
 /** Returns a Luxon DateTime corresponding to the beginning of the given day. */
 function startOfDay(date: DateTime) {
     return date.set({hour: 0, minute: 0, second: 0, millisecond: 0});
@@ -160,4 +165,4 @@ function approxDeltaT(JC: number) {
 }
 
 export {intDiv, clamp, mod, JD, JDN, jCentury, mins, direction, displayTime, displayDuration, startOfDay, startNextDay, 
-    approxDeltaT};
+    approxDeltaT, convertToMS};
