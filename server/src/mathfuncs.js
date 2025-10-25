@@ -1,6 +1,6 @@
 const degToRad = Math.PI / 180;
 /** Divide x by y, rounding the output to the nearest integer with smaller absolute value. */
-function intDiv(x, y) {
+export function intDiv(x, y) {
     if (x < 0) {
         return Math.ceil(x / y);
     }
@@ -10,7 +10,7 @@ function intDiv(x, y) {
 }
 /** Clamps a number to the range [min, max].
  * If min and max are not specified, they default to -1 and 1 respectively.*/
-function clamp(x, min = -1, max = 1) {
+export function clamp(x, min = -1, max = 1) {
     if (x <= min) {
         return min;
     }
@@ -22,17 +22,17 @@ function clamp(x, min = -1, max = 1) {
     }
 }
 /** Calculates x modulo y, where the output is in the range [0, y). */
-function mod(x, y) { return ((x % y) + y) % y; }
+export function mod(x, y) { return ((x % y) + y) % y; }
 /** Calculates Julian day given Gregorian calendar date. */
-function JD(y, m, d) {
+export function JD(y, m, d) {
     return intDiv(1461 * (y + 4800 + intDiv(m - 14, 12)), 4) +
         intDiv(367 * (m - 2 - 12 * intDiv(m - 14, 12)), 12) -
         intDiv(3 * intDiv(y + 4900 + intDiv(m - 14, 12), 100), 4) + d - 32075;
 }
-function JDN(y, m, d, time, timezone) { return JD(y, m, d) + (time - 60 * timezone - 720) / 1440; } // time in minutes after midnight
-function mins(date) { return date.hour * 60 + date.minute + date.second / 60 + date.millisecond / 60000; }
+export function JDN(y, m, d, time, timezone) { return JD(y, m, d) + (time - 60 * timezone - 720) / 1440; } // time in minutes after midnight
+export function mins(date) { return date.hour * 60 + date.minute + date.second / 60 + date.millisecond / 60000; }
 /** Calculates the Julian day number of a Luxon DateTime object. */
-function JDNdate(date) {
+export function JDNdate(date) {
     let year = date.year;
     let month = date.month;
     let day = date.day;
@@ -40,9 +40,9 @@ function JDNdate(date) {
     let timezone = date.offset / 60;
     return JDN(year, month, day, time, timezone);
 }
-function julianCentury(JDN) { return (JDN - 2451545) / 36525; }
+export function julianCentury(JDN) { return (JDN - 2451545) / 36525; }
 /** Calculates the Julian century number of a Luxon DateTime object. */
-function jCentury(date) {
+export function jCentury(date) {
     return julianCentury(JDNdate(date));
 }
 /**
@@ -50,7 +50,7 @@ function jCentury(date) {
  * @param bearing Compass bearing, in degrees clockwise from north.
  * @returns Compass point (either N, NNE, NE, ENE, E, ESE, SE, SSE, S, SSW, SW, WSW, W, WNW, NW, or NNW)
  */
-function direction(bearing) {
+export function direction(bearing) {
     if (bearing < 0 || bearing >= 360) {
         bearing = mod(bearing, 360);
     }
@@ -106,7 +106,7 @@ function direction(bearing) {
         return "N";
     }
 }
-function displayTime(date, twelveHourFormat = false) {
+export function displayTime(date, twelveHourFormat = false) {
     if (date == Number.POSITIVE_INFINITY) {
         return "∞";
     }
@@ -123,7 +123,7 @@ function displayTime(date, twelveHourFormat = false) {
         return date.toFormat("HH:mm:ss");
     }
 }
-function displayDuration(duration) {
+export function displayDuration(duration) {
     if (duration == Number.POSITIVE_INFINITY) {
         return "∞";
     }
@@ -138,22 +138,22 @@ function displayDuration(duration) {
     }
 }
 /** Returns the time of day in the DateTime as a number of milliseconds, from 0 (00:00:00.000) to 86399999 (23:59:59.999). */
-function convertToMS(date) {
+export function convertToMS(date) {
     return 1000 * (date.hour * 3600 + date.minute * 60 + date.second) + date.millisecond;
 }
 /** Returns a Luxon DateTime corresponding to the beginning of the given day. */
-function startOfDay(date) {
+export function startOfDay(date) {
     return date.set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
 }
 /** Returns a Luxon DateTime corresponding to the beginning of the next day. */
-function startNextDay(date) {
+export function startNextDay(date) {
     return date.plus({ days: 1 }).set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
 }
 /** This function finds the approximate value of delta T, the difference between terrestrial time (recorded by atomic clocks)
 and mean solar time (based on the Earth's rotation). This function's margin of error is 4.8 seconds in 2024, based on the
 value this function returns (73.8 seconds) versus the real value (69 seconds). The margin of error increases for years before
 1800 and after 2100, as the Earth's rotation varies unpredictably.*/
-function approxDeltaT(JC) {
+export function approxDeltaT(JC) {
     let y = 100 * JC + 2000;
     if (y < 500) {
         let u = y / 100;
@@ -211,4 +211,3 @@ function approxDeltaT(JC) {
         return 32 * u ** 2 - 20;
     }
 }
-export { intDiv, clamp, mod, JD, JDN, jCentury, mins, direction, displayTime, displayDuration, startOfDay, startNextDay, approxDeltaT, convertToMS };

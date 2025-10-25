@@ -27,7 +27,7 @@ import SunTime from "./SunTime.js"
 
 const N_UNDEFINED = 2**52;
 
-function meanSunLongitude(JC: number): number {
+export function meanSunLongitude(JC: number): number {
     JC += (approxDeltaT(JC)/3155760000); // division by 3155760000 converts seconds to Julian centuries
     let U = JC / 100;
     let meanLong = 4.9353929 + 62833.196168*U;
@@ -37,16 +37,16 @@ function meanSunLongitude(JC: number): number {
     }
     return meanLong;
 }
-function meanSunAnomaly(JC: number): number {return 357.52911 + 35999.05029*JC - 0.0001537*JC**2;}
-function eccentricity(JC: number): number {return 0.016708634 - 0.000042037*JC + 0.0000001267*JC**2;}
-function equationOfCenter(JC: number): number {
+export function meanSunAnomaly(JC: number): number {return 357.52911 + 35999.05029*JC - 0.0001537*JC**2;}
+export function eccentricity(JC: number): number {return 0.016708634 - 0.000042037*JC + 0.0000001267*JC**2;}
+export function equationOfCenter(JC: number): number {
     let anom = meanSunAnomaly(JC) * degToRad;
     return (1.914602 - 0.004817*JC - 0.000014*JC**2) * Math.sin(anom) +
     (0.019993 - 0.000101*JC) * Math.sin(2*anom) +
     0.000289 * Math.sin(3*anom);
 }
-function sunAnomaly(JC: number): number {return meanSunAnomaly(JC) + equationOfCenter(JC);}
-function sunDistance(date: number | DateTime): number {
+export function sunAnomaly(JC: number): number {return meanSunAnomaly(JC) + equationOfCenter(JC);}
+export function sunDistance(date: number | DateTime): number {
     if (typeof(date) == "number") {
         let ecc = eccentricity(date);
         return (149598023*(1-ecc**2))/(1+ecc*Math.cos(sunAnomaly(date)*degToRad));
@@ -62,7 +62,7 @@ function sunDistance(date: number | DateTime): number {
  * 90 at the June solstice, 180 at the September equinox, and 270 at the December solstice.
  * @param date A Luxon DateTime object, or a number representing the Julian century.
  */
-function sunLongitude(date: number | DateTime): number {
+export function sunLongitude(date: number | DateTime): number {
     if (typeof(date) == "number") {
         let correcteddate = date + (approxDeltaT(date)/3155760000);
         let U = correcteddate / 100;
@@ -80,7 +80,7 @@ function sunLongitude(date: number | DateTime): number {
  * Returns Earth's axial tilt in degrees, which is also the latitudes of the tropics of Cancer and Capricorn.
  * @param date A Luxon DateTime object, or a number representing the Julian century.
  */
-function axialTilt(date: number | DateTime): number {
+export function axialTilt(date: number | DateTime): number {
     if (typeof(date) == "number") {return 23.4392911 - (46.815*date-0.00059*date**2+0.001813*date**3)/3600 + 0.00256*Math.cos((125.04-1934.136*date)*degToRad);}
     else {return axialTilt(jCentury(date));}
 }
@@ -89,8 +89,7 @@ function axialTilt(date: number | DateTime): number {
  * Returns the sun's declination in degrees. This is the latitude of the subsolar point.
  * @param date A Luxon DateTime object, or a number representing the Julian century.
  */
-
-function declination(date: number | DateTime): number {
+export function declination(date: number | DateTime): number {
     if (typeof(date) == "number") {return Math.asin(clamp(Math.sin(axialTilt(date)*degToRad)*Math.sin(sunLongitude(date)*degToRad))) / degToRad;}
     else {return declination(jCentury(date))};
 }
@@ -99,7 +98,7 @@ function declination(date: number | DateTime): number {
  * Equation of time in minutes (apparent solar time - mean solar time).
  * @param date A Luxon DateTime object, or a number representing the Julian century.
  */
-function equationOfTime(date: number | DateTime): number { 
+export function equationOfTime(date: number | DateTime): number { 
     if (typeof(date) == "number") {
         let vary = Math.tan(axialTilt(date)*degToRad/2) ** 2;
         let long = mod(280.46646 + 36000.76983*date + 0.0003032*date**2, 360);
@@ -115,7 +114,7 @@ function equationOfTime(date: number | DateTime): number {
  * Returns sun's angular radius in degrees. To find the angular diameter, multiply this value by 2.
  * @param date A Luxon DateTime object.
  */
-function sunAngularRadius(date: DateTime): number {
+export function sunAngularRadius(date: DateTime): number {
     return (695700 / sunDistance(date)) / degToRad;
 }
 
@@ -124,7 +123,7 @@ function sunAngularRadius(date: DateTime): number {
  * @param longitude Longitude in degrees.
  * @param date A Luxon DateTime object.
  */
-function solarTime(longitude: number, date: DateTime): number {
+export function solarTime(longitude: number, date: DateTime): number {
     let timeEq = equationOfTime(date);
     return mod(mins(date) + timeEq + 4*longitude - date.offset, 1440);
 }
@@ -133,7 +132,7 @@ function solarTime(longitude: number, date: DateTime): number {
  * Difference between mean solar time at a given longitude and UTC, in minutes.
  * @param longitude Longitude in degrees.
  */
-function meanSolarTimeOffset(longitude: number): number {
+export function meanSolarTimeOffset(longitude: number): number {
     return Math.floor(4*longitude+0.5);
 }
 
@@ -143,7 +142,7 @@ function meanSolarTimeOffset(longitude: number): number {
  * @param date SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for solar noon.
  * @returns 
  */
-function solarNoon(lat: number, long: number, date: DateTime): SunTime[] {
+export function solarNoon(lat: number, long: number, date: DateTime): SunTime[] {
     let beginningOfDay = startOfDay(date);
     let endOfDay = startNextDay(date);
     let dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 1440, can be 1380 or 1500 with DST
@@ -177,7 +176,7 @@ function solarNoon(lat: number, long: number, date: DateTime): SunTime[] {
  * @param date SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for solar midnight.
  * @returns 
  */
-function solarMidnight(lat: number, long: number, date: DateTime): SunTime[] {
+export function solarMidnight(lat: number, long: number, date: DateTime): SunTime[] {
     let beginningOfDay = startOfDay(date);
     let endOfDay = startNextDay(date);
     let dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 1440, can be 1380 or 1500 with DST
@@ -211,7 +210,7 @@ function solarMidnight(lat: number, long: number, date: DateTime): SunTime[] {
  * @param date Luxon DateTime object.
  * @returns [latitude, longitude] of subsolar point
  */
-function subsolarPoint(date = DateTime.now().toUTC()): number[] {
+export function subsolarPoint(date = DateTime.now().toUTC()): number[] {
     let JC = jCentury(date);
     let subsolarLat = declination(JC);
     let soltime0 = mins(date.toUTC()) + equationOfTime(JC); // solar time at Greenwich meridian (longitude 0)
@@ -227,7 +226,7 @@ function subsolarPoint(date = DateTime.now().toUTC()): number[] {
  * @returns Array: [elevation, azimuth]. Elevation is in degrees above horizon, azimuth is degrees clockwise from north
  * Solar elevation is not refracted. To find the solar elevation angle adjusted for atmospheric refraction, use refract(sunPosition[0])
  */
-function sunPosition(lat: number, long: number, date: DateTime): number[] {
+export function sunPosition(lat: number, long: number, date: DateTime): number[] {
     let subsolarPt = subsolarPoint(date);
     let sunLat = subsolarPt[0] * degToRad;
     let sunLong = subsolarPt[1] * degToRad;
@@ -247,7 +246,7 @@ function sunPosition(lat: number, long: number, date: DateTime): number[] {
  * The number of degrees by which the sun's apparent elevation increases due to atmospheric refraction.
  * @param elev Solar elevation angle before refraction.
  */
-function refraction(elev: number): number {
+export function refraction(elev: number): number {
     // This formula is borrowed from NOAA's solar calculator but modified slightly to be continuous.
     if (Math.abs(elev) >= 89.999) {return 0;}
     else {
@@ -263,12 +262,12 @@ function refraction(elev: number): number {
 /**
  * Adjusts the given solar elevation angle (elev) to account for atmospheric refraction.
  */
-function refract(elev: number): number {
+export function refract(elev: number): number {
     return elev + refraction(elev);
 }
 
 /** Returns the approximate derivative of the solar elevation angle at a particular time, in degrees per second. */
-function derivative(lat: number, long: number, date: DateTime) {
+export function derivative(lat: number, long: number, date: DateTime) {
     return sunPosition(lat, long, date.plus(500))[0] - sunPosition(lat, long, date.minus(500))[0];
 }
 
@@ -276,7 +275,7 @@ function derivative(lat: number, long: number, date: DateTime) {
  * Returns an array of DateTime objects, representing the start of the current day, the times at which the derivative of solar
  * elevation angle is 0, and the start of the next day. This is a helper function for "dawn" and "dusk" functions below.
  */
-function maxAndMin(lat: number, long: number, date: DateTime): DateTime[] {
+export function maxAndMin(lat: number, long: number, date: DateTime): DateTime[] {
     let beginningOfDay = startOfDay(date);
     let endOfDay = startNextDay(date);
     if (endOfDay.hour != 0) {endOfDay = endOfDay.minus({hours: endOfDay.hour});} // daylight saving time adjustment
@@ -327,7 +326,7 @@ function maxAndMin(lat: number, long: number, date: DateTime): DateTime[] {
  * @param type "Sunrise", "Civil Dawn", "Nautical Dawn" or "Astro Dawn"
  * @returns SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for the type of dawn/sunrise.
  */
-function dawn(lat: number, long: number, date: DateTime, angle: number, type: string): SunTime[] {
+export function dawn(lat: number, long: number, date: DateTime, angle: number, type: string): SunTime[] {
     let maxAndMinTimes = maxAndMin(lat, long, date);
     let dawnTimes = [];
     for (let i=0; i<maxAndMinTimes.length-1; i++) {
@@ -356,7 +355,7 @@ function dawn(lat: number, long: number, date: DateTime, angle: number, type: st
  * @param type "Sunset", "Civil Dusk", "Nautical Dusk", "Astro Dusk"
  * @returns SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for the type of dusk/sunset.
  */
-function dusk(lat: number, long: number, date: DateTime, angle: number, type: string): SunTime[] {
+export function dusk(lat: number, long: number, date: DateTime, angle: number, type: string): SunTime[] {
     let maxAndMinTimes = maxAndMin(lat, long, date);
     let duskTimes = [];
     for (let i=0; i<maxAndMinTimes.length-1; i++) {
@@ -375,14 +374,14 @@ function dusk(lat: number, long: number, date: DateTime, angle: number, type: st
     return duskTimes;
 }
 
-function sunrise(lat: number, long: number, date: DateTime) {return dawn(lat, long, date, -5/6, "Sunrise");} 
-function sunset(lat: number, long: number, date: DateTime) {return dusk(lat, long, date, -5/6, "Sunset");}
-function civilDawn(lat: number, long: number, date: DateTime) {return dawn(lat, long, date, -6, "Civil Dawn");}
-function civilDusk(lat: number, long: number, date: DateTime) {return dusk(lat, long, date, -6, "Civil Dusk");}
-function nauticalDawn(lat: number, long: number, date: DateTime) {return dawn(lat, long, date, -12, "Nautical Dawn");}
-function nauticalDusk(lat: number, long: number, date: DateTime) {return dusk(lat, long, date, -12, "Nautical Dusk");}
-function astroDawn(lat: number, long: number, date: DateTime) {return dawn(lat, long, date, -18, "Astro Dawn");}
-function astroDusk(lat: number, long: number, date: DateTime) {return dusk(lat, long, date, -18, "Astro Dusk");}
+export function sunrise(lat: number, long: number, date: DateTime) {return dawn(lat, long, date, -5/6, "Sunrise");} 
+export function sunset(lat: number, long: number, date: DateTime) {return dusk(lat, long, date, -5/6, "Sunset");}
+export function civilDawn(lat: number, long: number, date: DateTime) {return dawn(lat, long, date, -6, "Civil Dawn");}
+export function civilDusk(lat: number, long: number, date: DateTime) {return dusk(lat, long, date, -6, "Civil Dusk");}
+export function nauticalDawn(lat: number, long: number, date: DateTime) {return dawn(lat, long, date, -12, "Nautical Dawn");}
+export function nauticalDusk(lat: number, long: number, date: DateTime) {return dusk(lat, long, date, -12, "Nautical Dusk");}
+export function astroDawn(lat: number, long: number, date: DateTime) {return dawn(lat, long, date, -18, "Astro Dawn");}
+export function astroDusk(lat: number, long: number, date: DateTime) {return dusk(lat, long, date, -18, "Astro Dusk");}
 
 /**
  * Returns day length in seconds (time from sunrise to sunset). If sunset is after midnight or sunrise is before midnight (due to
@@ -392,7 +391,7 @@ function astroDusk(lat: number, long: number, date: DateTime) {return dusk(lat, 
  * @param date Luxon DateTime object representing date
  * @returns Seconds of daylight (0 - 86400 exclusive) or -1 if undefined
  */
-function dayLength(lat: number, long: number, date: DateTime) {
+export function dayLength(lat: number, long: number, date: DateTime) {
     let rise = sunrise(lat, long, date);
     let set = sunset(lat, long, date);
     if (rise.length == 0 && set.length == 0) {
@@ -422,7 +421,7 @@ function dayLength(lat: number, long: number, date: DateTime) {
  * @param long Longitude in degrees
  * @param date The date of the events
  */
-function allSunEvents(lat: number, long: number, date: DateTime) {
+export function allSunEvents(lat: number, long: number, date: DateTime) {
     let midnight = solarMidnight(lat, long, date);
     let adawn = astroDawn(lat, long, date);
     let ndawn = nauticalDawn(lat, long, date);
@@ -444,7 +443,7 @@ function allSunEvents(lat: number, long: number, date: DateTime) {
  * @param timezone Time zone in IANA format (example: "utc" or "America/Los_Angeles")
  * @returns Time of March equinox as a Luxon DateTime object.
  */
-function marEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
+export function marEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
     let start = DateTime.fromObject({year:year, month:3, day:16}, {zone: "utc"});
     let date = start;
     let long: number;
@@ -465,7 +464,7 @@ function marEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
  * @param timezone Time zone in IANA format (example: "utc" or "America/Los_Angeles")
  * @returns Time of June solstice as a Luxon DateTime object.
  */
-function junSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
+export function junSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
     let start = DateTime.fromObject({year:year, month:6, day:16}, {zone: "utc"});
     let date = start;
     let long: number;
@@ -486,7 +485,7 @@ function junSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
  * @param timezone Time zone in IANA format (example: "utc" or "America/Los_Angeles")
  * @returns Time of September equinox as a Luxon DateTime object.
  */
-function sepEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
+export function sepEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
     // Returns a DateTime object representing the moment of the September equinox in a given year and time zone
     let start = DateTime.fromObject({year:year, month:9, day:18}, {zone: "utc"});
     let date = start;
@@ -508,7 +507,7 @@ function sepEquinox(year = DateTime.now().toUTC().year, timezone = "utc") {
  * @param timezone Time zone in IANA format (example: "utc" or "America/Los_Angeles")
  * @returns Time of December solstice as a Luxon DateTime object.
  */
-function decSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
+export function decSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
     let start = DateTime.fromObject({year:year, month:12, day:18}, {zone: "utc"});
     let date = start;
     let long: number;
@@ -530,7 +529,7 @@ function decSolstice(year = DateTime.now().toUTC().year, timezone = "utc") {
  * @param zone Time zone (example: "utc" or "America/Los_Angeles")
  * @returns Luxon DateTime object with equinox/solstice date in given time zone.
  */
-function getSolsticeEquinox(year: number, month: number, zone = "utc") {
+export function getSolsticeEquinox(year: number, month: number, zone = "utc") {
     const data = fs.readFileSync("./solstices_equinoxes.json", "utf8");
     const array = JSON.parse(data);
     let n = year - array[0].year;
@@ -555,7 +554,7 @@ function getSolsticeEquinox(year: number, month: number, zone = "utc") {
  * @param sunEvents Array returned by allSunEvents
  * @returns Array with intervals of [day, civil twilight, nautical twilight, astronomical twilight, night].
  */
-function intervals(lat: number, long: number, date: DateTime, sunEvents: SunTime[]) {
+export function intervals(lat: number, long: number, date: DateTime, sunEvents: SunTime[]) {
     let newSunEvents = []; // sunEvents without solar noon or midnight
     let ints : number[][][] = [[], [], [], [], []]; // intervals of day, civil twilight, nautical twilight, astronomical twilight, and night
 
@@ -611,7 +610,7 @@ function intervals(lat: number, long: number, date: DateTime, sunEvents: SunTime
  * @t2: Day + civil twilight + nautical twilight
  * @t3: Day + civil twilight + nautical twilight + astronomical twilight
  */
-function lengths(sunEvents: SunTime[]) {
+export function lengths(sunEvents: SunTime[]) {
     let newSunEvents = []; // sunEvents without solar noon or midnight
     const DAY_LENGTH = 86400000;
     let durations = [0, 0, 0, 0]; // durations
@@ -655,38 +654,3 @@ function lengths(sunEvents: SunTime[]) {
     return [durations[0], durations[0]+durations[1], durations[0]+durations[1]+durations[2],
     durations[0]+durations[1]+durations[2]+durations[3]];
 }
-
-export {sunDistance, 
-    sunLongitude, 
-    axialTilt, 
-    declination, 
-    equationOfTime, 
-    meanSunAnomaly, 
-    sunAngularRadius, 
-    meanSolarTimeOffset, 
-    solarTime, 
-    solarNoon, 
-    solarMidnight, 
-    subsolarPoint, 
-    sunPosition, 
-    refraction, 
-    refract, 
-    dawn, 
-    dusk, 
-    sunrise, 
-    sunset, 
-    civilDawn, 
-    civilDusk, 
-    nauticalDawn, 
-    nauticalDusk, 
-    astroDawn, 
-    astroDusk, 
-    dayLength,
-    allSunEvents,
-    marEquinox, 
-    junSolstice, 
-    sepEquinox, 
-    decSolstice, 
-    getSolsticeEquinox,
-    intervals,
-    lengths};

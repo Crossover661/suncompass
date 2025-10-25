@@ -3,35 +3,35 @@ const degToRad = Math.PI/180;
 import { DateTime } from 'luxon';
 
 /** Divide x by y, rounding the output to the nearest integer with smaller absolute value. */
-function intDiv(x: number, y: number) {
+export function intDiv(x: number, y: number) {
     if (x<0) {return Math.ceil(x/y);}
     else {return Math.floor(x/y);}
 }
 
 /** Clamps a number to the range [min, max]. 
  * If min and max are not specified, they default to -1 and 1 respectively.*/
-function clamp(x: number, min=-1, max=1) {
+export function clamp(x: number, min=-1, max=1) {
     if (x <= min) {return min;}
     else if (x >= max) {return max;}
     else {return x;}
 }
 
 /** Calculates x modulo y, where the output is in the range [0, y). */
-function mod(x: number, y: number) {return ((x % y) + y) % y;}
+export function mod(x: number, y: number) {return ((x % y) + y) % y;}
 
 /** Calculates Julian day given Gregorian calendar date. */
-function JD(y: number, m: number, d: number){
+export function JD(y: number, m: number, d: number){
     return intDiv(1461 * (y+4800 + intDiv(m-14,12)), 4) +
     intDiv(367 * (m-2 - 12*intDiv(m-14,12)), 12) -
     intDiv(3 * intDiv(y+4900 + intDiv(m-14, 12), 100), 4) + d - 32075;
 }
 
-function JDN(y: number, m: number, d: number, time: number, timezone: number) {return JD(y, m, d) + (time - 60*timezone - 720)/1440;} // time in minutes after midnight
+export function JDN(y: number, m: number, d: number, time: number, timezone: number) {return JD(y, m, d) + (time - 60*timezone - 720)/1440;} // time in minutes after midnight
 
-function mins(date: DateTime) {return date.hour*60 + date.minute + date.second/60 + date.millisecond/60000;}
+export function mins(date: DateTime) {return date.hour*60 + date.minute + date.second/60 + date.millisecond/60000;}
 
 /** Calculates the Julian day number of a Luxon DateTime object. */
-function JDNdate(date: DateTime) {
+export function JDNdate(date: DateTime) {
     let year = date.year;
     let month = date.month;
     let day = date.day;
@@ -40,10 +40,10 @@ function JDNdate(date: DateTime) {
     return JDN(year,month,day,time,timezone);
 }
 
-function julianCentury(JDN: number) {return (JDN-2451545)/36525;}
+export function julianCentury(JDN: number) {return (JDN-2451545)/36525;}
 
 /** Calculates the Julian century number of a Luxon DateTime object. */
-function jCentury(date: DateTime) {
+export function jCentury(date: DateTime) {
     return julianCentury(JDNdate(date));
 }
 
@@ -52,7 +52,7 @@ function jCentury(date: DateTime) {
  * @param bearing Compass bearing, in degrees clockwise from north.
  * @returns Compass point (either N, NNE, NE, ENE, E, ESE, SE, SSE, S, SSW, SW, WSW, W, WNW, NW, or NNW)
  */
-function direction(bearing: number) {
+export function direction(bearing: number) {
     if (bearing < 0 || bearing >= 360) {bearing = mod(bearing, 360);}
     if (bearing < 11.25) {return "N";}
     else if (bearing < 33.75) {return "NNE";}
@@ -73,7 +73,7 @@ function direction(bearing: number) {
     else {return "N";}
 }
 
-function displayTime(date: any, twelveHourFormat = false) {
+export function displayTime(date: any, twelveHourFormat = false) {
     if (date == Number.POSITIVE_INFINITY) {return "∞";}
     else if (date == Number.NEGATIVE_INFINITY) {return "-∞";}
     else if (isNaN(date)) {return NaN;}
@@ -81,7 +81,7 @@ function displayTime(date: any, twelveHourFormat = false) {
     else {return date.toFormat("HH:mm:ss");}
 }
 
-function displayDuration(duration: any) {
+export function displayDuration(duration: any) {
     if (duration == Number.POSITIVE_INFINITY) {return "∞";}
     else if (duration == Number.NEGATIVE_INFINITY) {return "-∞";}
     else if (isNaN(duration)) {return NaN;}
@@ -89,17 +89,17 @@ function displayDuration(duration: any) {
 }
 
 /** Returns the time of day in the DateTime as a number of milliseconds, from 0 (00:00:00.000) to 86399999 (23:59:59.999). */
-function convertToMS(date: DateTime) {
+export function convertToMS(date: DateTime) {
     return 1000 * (date.hour * 3600 + date.minute * 60 + date.second) + date.millisecond;
 }
 
 /** Returns a Luxon DateTime corresponding to the beginning of the given day. */
-function startOfDay(date: DateTime) {
+export function startOfDay(date: DateTime) {
     return date.set({hour: 0, minute: 0, second: 0, millisecond: 0});
 }
 
 /** Returns a Luxon DateTime corresponding to the beginning of the next day. */
-function startNextDay(date: DateTime) {
+export function startNextDay(date: DateTime) {
     return date.plus({days: 1}).set({hour: 0, minute: 0, second: 0, millisecond: 0});
 }
 
@@ -107,7 +107,7 @@ function startNextDay(date: DateTime) {
 and mean solar time (based on the Earth's rotation). This function's margin of error is 4.8 seconds in 2024, based on the
 value this function returns (73.8 seconds) versus the real value (69 seconds). The margin of error increases for years before
 1800 and after 2100, as the Earth's rotation varies unpredictably.*/
-function approxDeltaT(JC: number) {
+export function approxDeltaT(JC: number) {
     let y = 100*JC+2000;
     if (y < 500) {
         let u = y/100;
@@ -163,6 +163,3 @@ function approxDeltaT(JC: number) {
         return 32*u**2-20;
     }
 }
-
-export {intDiv, clamp, mod, JD, JDN, jCentury, mins, direction, displayTime, displayDuration, startOfDay, startNextDay, 
-    approxDeltaT, convertToMS};

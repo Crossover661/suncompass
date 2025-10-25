@@ -3,24 +3,24 @@ import {meanSunAnomaly} from "./suncalc.js";
 import {DateTime} from "luxon";
 import {degToRad} from "./constants.js";
 
-function moonMeanLongitude(JC: number) {
+export function moonMeanLongitude(JC: number) {
     return 218.3164477 + 481267.88123421*JC - 0.0015786*JC**2 + JC**3/538841 - JC**4/65194000;
 }
 
-function moonMeanElongation(JC: number) {
+export function moonMeanElongation(JC: number) {
     return 297.8501921 + 445267.1114034*JC - 0.0018819*JC**2 + JC**3/545868 - JC**4/113065000;
 }
 
-function moonMeanAnomaly(JC: number) {
+export function moonMeanAnomaly(JC: number) {
     return 134.9633964 + 477198.8675055*JC + 0.0087414*JC**2 + JC**3/69699 - JC**4/14712000;
 }
 
-function moonArgLat(JC: number) {
+export function moonArgLat(JC: number) {
     // moon argument of latitude
     return 93.272095 + 483202.0175233*JC - 0.0036539*JC**2 - JC**3/3526000 + JC**4/863310000;
 }
 
-const ptld = // moon's periodic terms for longitude and distance
+export const ptld = // moon's periodic terms for longitude and distance
 [
 [0,0,1,0,6288774,-20905355],
 [2,0,-1,0,1274027,-3699111],
@@ -84,7 +84,7 @@ const ptld = // moon's periodic terms for longitude and distance
 [2,0,-1,-2,0,8752]
 ];
 
-const ptl = [ // periodic terms for the moon's latitude
+export const ptl = [ // periodic terms for the moon's latitude
 [0,0,0,1,5128122],
 [0,0,1,1,280602],
 [0,0,1,-1,277693],
@@ -147,7 +147,7 @@ const ptl = [ // periodic terms for the moon's latitude
 [2,-2,0,1,107],
 ];
 
-function l(JC: number) {
+export function l(JC: number) {
     let l = 0;
     for (let i=0; i<ptld.length; i++) {
         let curRow = ptld[i];
@@ -156,7 +156,7 @@ function l(JC: number) {
     return l;
 }
 
-function r(JC: number) {
+export function r(JC: number) {
     let r = 0;
     for (let i=0; i<ptld.length; i++) {
         let curRow = ptld[i];
@@ -165,7 +165,7 @@ function r(JC: number) {
     return r;
 }
 
-function b(JC: number) {
+export function b(JC: number) {
     let b = 0;
     for (let i=0; i<ptl.length; i++) {
         let curRow = ptl[i];
@@ -174,24 +174,24 @@ function b(JC: number) {
     return b;
 }
 
-function a(JC: number) {
+export function a(JC: number) {
     let a1 = 119.75 + 131.849*JC;
     let a2 = 53.09 + 479264.29*JC;
     let a3 = 313.45 + 481266.484*JC;
     return [a1, a2, a3];
 }
 
-function deltaL(JC: number) {
+export function deltaL(JC: number) {
     let A = a(JC);
     return 3958*Math.sin(A[0]*degToRad) + 1962*Math.sin((moonMeanLongitude(JC)-moonArgLat(JC))*degToRad) + 318*Math.sin(A[1]*degToRad);
 }
 
-function deltaB(JC: number) {
+export function deltaB(JC: number) {
     let A = a(JC);
     return -2235*Math.sin(moonMeanLongitude(JC)*degToRad) + 382*Math.sin(A[2]*degToRad) + 175*Math.sin((A[0]-moonArgLat(JC))*degToRad) + 175*Math.sin((A[0]+moonArgLat(JC))*degToRad) + 127*Math.sin((moonMeanLongitude(JC)-moonMeanAnomaly(JC))*degToRad) - 115*Math.sin((moonMeanLongitude(JC)+moonMeanAnomaly(JC))*degToRad);
 }
 
-function moonLatLong(JC: number) {
+export function moonLatLong(JC: number) {
     let long = moonMeanLongitude(JC) + (l(JC)+deltaL(JC))/1000000;
     let lat = (b(JC) + deltaB(JC))/1000000;
     if (lat < -90) {lat = -90;}
@@ -200,11 +200,11 @@ function moonLatLong(JC: number) {
     return [lat, long];
 }
 
-function moonLatitudeLongitude(date: DateTime) {
+export function moonLatitudeLongitude(date: DateTime) {
     let JC = jCentury(date);
     return moonLatLong(JC);
 }
 
-function moonEarthDistanceKM(JC: number) {
+export function moonEarthDistanceKM(JC: number) {
     return 385000.56 + r(JC)/1000;
 }

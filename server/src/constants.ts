@@ -1,10 +1,10 @@
 // This file contains constant values such as the conversion factor between degrees and radians, as well as periodic terms for 
 // calculation of the sun and moon positions.
 
-const degToRad = Math.PI/180;
+export const degToRad = Math.PI/180;
 
 // The following periodic terms are adopted from the book "Planetary Programs and Tables from -4000 to +2800".
-const sunPeriodicTerms = [
+export const sunPeriodicTerms = [
     [403406, 0, 4.721964, 1.621043],
     [195207, -97597, 5.937458, 62830.348067],
     [119433, -59715, 1.115589, 62830.821524],
@@ -55,6 +55,4 @@ const sunPeriodicTerms = [
     [10, 0, 3.59, -68.29],
     [10, 0, 1.5, 21463.25],
     [10, -9, 2.55, 157208.4]
-]
-
-export {degToRad, sunPeriodicTerms};
+];
