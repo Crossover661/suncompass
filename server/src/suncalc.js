@@ -16,7 +16,7 @@ This site uses the Luxon library to deal with date/time computations. Luxon is u
 durations, conversion between different time zones, and complexities such as daylight saving time. The geo-tz library is used to find
 the time zone of a geographic coordinate.
 */
-import { clamp, mod, mins, jCentury, approxDeltaT, startOfDay, startNextDay } from "./mathfuncs.js";
+import { clamp, mod, mins, jCentury, approxDeltaT, startOfDay, startNextDay, convertToMS } from "./mathfuncs.js";
 import { DateTime } from "luxon";
 import { degToRad, sunPeriodicTerms } from "./constants.js";
 import * as fs from "fs";
@@ -328,6 +328,7 @@ function maxAndMin(lat, long, date) {
  * @param long Longitude in degrees
  * @param date Luxon DateTime object
  * @param angle Solar elevation angle in degrees
+ * @param type "Sunrise", "Civil Dawn", "Nautical Dawn" or "Astro Dawn"
  * @returns SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for the type of dawn/sunrise.
  */
 function dawn(lat, long, date, angle, type) {
@@ -359,6 +360,7 @@ function dawn(lat, long, date, angle, type) {
  * @param long Longitude in degrees
  * @param date Luxon DateTime object
  * @param angle Solar elevation angle in degrees
+ * @param type "Sunset", "Civil Dusk", "Nautical Dusk", "Astro Dusk"
  * @returns SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for the type of dusk/sunset.
  */
 function dusk(lat, long, date, angle, type) {
@@ -576,5 +578,105 @@ function getSolsticeEquinox(year, month, zone = "utc") {
         console.log("Month must be 3, 6, 9, or 12");
         return DateTime.fromMillis(N_UNDEFINED);
     }
+}
+/**
+ * Returns intervals of day, civil twilight, nautical twilight, astronomical twilight, and night during a particular day.
+ * Time is measured in milliseconds since midnight. It is not adjusted for DST, so "4 pm" is always represented as 16*60*60*1000 =
+ * 57600000.
+ * @param lat Latitude
+ * @param long Longitude
+ * @param date DateTime
+ * @param sunEvents Array returned by allSunEvents
+ * @returns Array with intervals of [day, civil twilight, nautical twilight, astronomical twilight, night].
+ */
+function intervals(lat, long, date, sunEvents) {
+    if (sunEvents.length == 0) { // no sunrise, sunset, dawn, or dusk
+        let sunAngle = sunPosition(lat, long, date)[0];
+        if (sunAngle < -18) {
+            return [[], [], [], [], [[0, 86400000]]];
+        }
+        else if (sunAngle < -12) {
+            return [[], [], [], [[0, 86400000]], []];
+        }
+        else if (sunAngle < -6) {
+            return [[], [], [[0, 86400000]], [], []];
+        }
+        else if (sunAngle < -5 / 6) {
+            return [[], [[0, 86400000]], [], [], []];
+        }
+        else {
+            return [[[0, 86400000]], [], [], [], []];
+        }
+    }
+    let newSunEvents = []; // sunEvents without solar noon or midnight
+    let ints = [[], [], [], [], []]; // intervals of day, civil twilight, nautical twilight, astronomical twilight, and night
+    for (let event of sunEvents) {
+        if (event.eventType != "Solar Noon" && event.eventType != "Solar Midnight") {
+            newSunEvents.push(event);
+        }
+    }
+    let etype = newSunEvents[0].eventType;
+    if (etype == "Sunset") {
+        ints[0].push([0, convertToMS(newSunEvents[0].time)]);
+    }
+    else if (etype == "Sunrise" || etype == "Civil Dusk") {
+        ints[1].push([0, convertToMS(newSunEvents[0].time)]);
+    }
+    else if (etype == "Civil Dawn" || etype == "Nautical Dusk") {
+        ints[2].push([0, convertToMS(newSunEvents[0].time)]);
+    }
+    else if (etype == "Nautical Dawn" || etype == "Astro Dusk") {
+        ints[3].push([0, convertToMS(newSunEvents[0].time)]);
+    }
+    else if (etype == "Astro Dawn") {
+        ints[4].push([0, convertToMS(newSunEvents[0].time)]);
+    }
+    for (let i = 0; i < newSunEvents.length - 1; i++) {
+        etype = newSunEvents[i + 1].eventType;
+        let t0 = convertToMS(newSunEvents[i].time);
+        let t1 = convertToMS(newSunEvents[i + 1].time);
+        if (etype == "Sunset") {
+            ints[0].push([t0, t1]);
+        }
+        else if (etype == "Sunrise" || etype == "Civil Dusk") {
+            ints[1].push([t0, t1]);
+        }
+        else if (etype == "Civil Dawn" || etype == "Nautical Dusk") {
+            ints[2].push([t0, t1]);
+        }
+        else if (etype == "Nautical Dawn" || etype == "Astro Dusk") {
+            ints[3].push([t0, t1]);
+        }
+        else if (etype == "Astro Dawn") {
+            ints[4].push([t0, t1]);
+        }
+    }
+    let lastTime = convertToMS(newSunEvents[newSunEvents.length - 1].time);
+    if (etype == "Sunrise") {
+        ints[0].push([lastTime, 86400000]);
+    }
+    else if (etype == "Civil Dawn" || etype == "Sunset") {
+        ints[1].push([lastTime, 86400000]);
+    }
+    else if (etype == "Nautical Dawn" || etype == "Civil Dusk") {
+        ints[2].push([lastTime, 86400000]);
+    }
+    else if (etype == "Astro Dawn" || etype == "Nautical Dusk") {
+        ints[3].push([lastTime, 86400000]);
+    }
+    else if (etype == "Astro Dusk") {
+        ints[4].push([lastTime, 86400000]);
+    }
+    return ints;
+}
+/** Calculates the lengths of day, civil twilight, nautical twilight, astronomical twilight, and night given the intervals. */
+function lengths(intervals) {
+    let l = [0, 0, 0, 0, 0];
+    for (let i = 0; i < 4; i++) {
+        for (let interval of intervals[i]) {
+            l[i] += (interval[1] - interval[0]);
+        }
+    }
+    return l;
 }
 export { sunDistance, sunLongitude, axialTilt, declination, equationOfTime, meanSunAnomaly, sunAngularRadius, meanSolarTimeOffset, solarTime, solarNoon, solarMidnight, subsolarPoint, sunPosition, refraction, refract, dawn, dusk, sunrise, sunset, civilDawn, civilDusk, nauticalDawn, nauticalDusk, astroDawn, astroDusk, dayLength, allSunEvents, marEquinox, junSolstice, sepEquinox, decSolstice, getSolsticeEquinox };
