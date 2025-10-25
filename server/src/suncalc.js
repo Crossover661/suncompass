@@ -679,4 +679,4 @@ function lengths(intervals) {
     }
     return l;
 }
-export { sunDistance, sunLongitude, axialTilt, declination, equationOfTime, meanSunAnomaly, sunAngularRadius, meanSolarTimeOffset, solarTime, solarNoon, solarMidnight, subsolarPoint, sunPosition, refraction, refract, dawn, dusk, sunrise, sunset, civilDawn, civilDusk, nauticalDawn, nauticalDusk, astroDawn, astroDusk, dayLength, allSunEvents, marEquinox, junSolstice, sepEquinox, decSolstice, getSolsticeEquinox };
+export { sunDistance, sunLongitude, axialTilt, declination, equationOfTime, meanSunAnomaly, sunAngularRadius, meanSolarTimeOffset, solarTime, solarNoon, solarMidnight, subsolarPoint, sunPosition, refraction, refract, dawn, dusk, sunrise, sunset, civilDawn, civilDusk, nauticalDawn, nauticalDusk, astroDawn, astroDusk, dayLength, allSunEvents, marEquinox, junSolstice, sepEquinox, decSolstice, getSolsticeEquinox, intervals, lengths };

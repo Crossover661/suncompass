@@ -644,4 +644,6 @@ export {sunDistance,
     junSolstice, 
     sepEquinox, 
     decSolstice, 
-    getSolsticeEquinox};
+    getSolsticeEquinox,
+    intervals,
+    lengths};
