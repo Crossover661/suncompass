@@ -3,6 +3,7 @@
  * "daylength_svg" generates an SVG file showing (from top to bottom) the lengths of day, civil twilight, nautical twilight, astronomical
  * twilight and night for an entire year
  */
+import { lengths } from "./suncalc.js";
 /** Generates the opening of an SVG */
 function svg_open(width, height) {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">\n`;
@@ -47,131 +48,153 @@ function month_edges(leap_year = false) {
         return [0, 30.5, 58.5, 89.5, 119.5, 150.5, 180.5, 211.5, 242.5, 272.5, 303.5, 333.5, 364];
     }
 }
-export function daylength_svg(lengths, // lengths from "lengths" function in suncalc.ts
-svg_width = 1000, // width of the chart (not the entire SVG file)
-svg_height = 500, // height of the chart (not the entire SVG file)
-language = "en", background_color = "#ffffff", text_size = 12, font = "Arial", text_color = "#000000", show_gridlines = true, grid_interval = 2, grid_color = "#808080", gridline_width = 0.5, colors = ["#80c0ff", "#0060c0", "#004080", "#002040", "#000000"], left_padding = 25, right_padding = 10, top_padding = 10, bottom_padding = 25) {
-    const days = lengths.length; // 365 days for common years, 366 for leap years
+/**
+ * Returns a string containing an SVG diagram for either day/twilight/night lengths throughout the year, or the times of day in which
+ * day, night, and each stage of twilight occur.
+ * @param sun_events Values of "allSunEvents" for each day of the year.
+ * @param length Set to "true" to generate a day/night/twilight length chart, or "false" to generate a chart with times of day.
+ * @param svg_width Width of the chart (not the entire SVG file). Defaults to 1000.
+ * @param svg_height Height of the chart (not the entire SVG file). Defaults to 500.
+ * @param language The language used for month abbreviations, represented as a 2-letter code for example "en" for English, "es" for Spanish
+ * or "zh" for Mandarin Chinese. Defaults to "en" (English).
+ * @param background_color The background color of the SVG file. Defaults to #ffffff (white).
+ * @param text_size The font size to use for the axis labels. Defaults to 12.
+ * @param font The font family to use for the axis labels. Defaults to Arial.
+ * @param text_color Color of text in axis labels. Defaults to #000000 (black).
+ * @param show_gridlines Whether to show the gridlines overlaid on the carpet plot. Defaults to "true".
+ * @param grid_interval Y axis interval. Defaults to 2 (i.e. 2 hours between gridlines)
+ * @param grid_color Colors of gridlines. Defaults to #808080 (medium gray).
+ * @param gridline_width Width of gridlines. Defaults to 0.5 (pixels).
+ * @param colors An array of 5 strings with the hex colors to use for daylight, civil twilight, nautical twilight, astronomical twilight
+ * and night respectively. Defaults to ["#80c0ff", "#0060c0", "#004080", "#002040", "#000000"].
+ * @param left_padding Padding to the left of the carpet plot. Defaults to 25 pixels.
+ * @param right_padding Padding to the right of the carpet plot. Defaults to 10 pixels.
+ * @param top_padding Padding above the carpet plot. Defaults to 10 pixels.
+ * @param bottom_padding Padding below the carpet plot. Defaults to 25 pixels.
+ * @returns A string for the carpet plot, with gridlines and axis labels, that can be saved into an SVG file.
+ * The total width of the SVG file is equal to svg_width + left_padding + right_padding. The height is equal to svg_height + top_padding +
+ * bottom_padding.
+ */
+export function generate_svg(sun_events, length, svg_width = 1000, svg_height = 500, language = "en", background_color = "#ffffff", text_size = 12, font = "Arial", text_color = "#000000", show_gridlines = true, grid_interval = 2, grid_color = "#808080", gridline_width = 0.5, colors = ["#80c0ff", "#0060c0", "#004080", "#002040", "#000000"], left_padding = 25, right_padding = 10, top_padding = 10, bottom_padding = 25) {
+    const days = sun_events.length; // 365 days for common years, 366 for leap years
     const DAY_LENGTH = 86400000; // milliseconds in a day
-    /** sum of first n values of array */
-    function array_sum(array, n = array.length) {
-        let sum = 0;
-        for (let i = 0; i < n; i++) {
-            sum += array[i];
-        }
-        return sum;
-    }
     /** x-coordinate representing given day */
     function xCoord(dayNumber) { return left_padding + svg_width * (dayNumber / (days - 1)); }
     /** y-coordinate representing day length */
     function yCoord(dayLength) { return top_padding + svg_height * (1 - dayLength / DAY_LENGTH); }
-    let dLengths = []; // day lengths
-    let cLengths = []; // day + civil twilight lengths
-    let nLengths = []; // day + civil + nautical twilight lengths
-    let aLengths = []; // day + civil + nautical + astronomical twilight lengths
-    for (let l of lengths) {
-        dLengths.push(l[0]);
-        cLengths.push(l[1]);
-        nLengths.push(l[2]);
-        aLengths.push(l[3]);
-    }
-    let dp = [[]]; // day polygons
-    let cp = [[]]; // civil twilight polygons
-    let np = [[]]; // nautical twilight polygons
-    let ap = [[]]; // astronomical twilight polygons
-    // generate polygons
-    for (let i = 0; i < days; i++) {
-        // generate day polygons
-        if (dLengths[i] > 0) {
-            if (i == 0) {
-                dp[0].push([left_padding, top_padding + svg_height], [left_padding, yCoord(dLengths[0])]);
-            }
-            else if (dLengths[i - 1] == 0) {
-                dp.push([[xCoord(i - 0.5), top_padding + svg_height], [xCoord(i), yCoord(dLengths[i])]]);
-            }
-            else {
-                dp[dp.length - 1].push([xCoord(i), yCoord(dLengths[i])]);
-            }
-            if (i == days - 1) {
-                dp[dp.length - 1].push([left_padding + svg_width, top_padding + svg_height]);
-            }
-        }
-        else if (i != 0 && dLengths[i - 1] > 0) {
-            dp[dp.length - 1].push([xCoord(i + 0.5), top_padding + svg_height]);
-        }
-        // generate civil twilight polygons
-        if (cLengths[i] > 0) {
-            if (i == 0) {
-                cp[0].push([left_padding, top_padding + svg_height], [left_padding, yCoord(cLengths[0])]);
-            }
-            else if (cLengths[i - 1] == 0) {
-                cp.push([[xCoord(i - 0.5), top_padding + svg_height], [xCoord(i), yCoord(cLengths[i])]]);
-            }
-            else {
-                cp[cp.length - 1].push([xCoord(i), yCoord(cLengths[i])]);
-            }
-            if (i == days - 1) {
-                cp[cp.length - 1].push([left_padding + svg_width, top_padding + svg_height]);
-            }
-        }
-        else if (i != 0 && cLengths[i - 1] > 0) {
-            cp[cp.length - 1].push([xCoord(i + 0.5), top_padding + svg_height]);
-        }
-        // generate nautical twilight polygons
-        if (nLengths[i] > 0) {
-            if (i == 0) {
-                np[0].push([left_padding, top_padding + svg_height], [left_padding, yCoord(nLengths[0])]);
-            }
-            else if (nLengths[i - 1] == 0) {
-                np.push([[xCoord(i - 0.5), top_padding + svg_height], [xCoord(i), yCoord(nLengths[i])]]);
-            }
-            else {
-                np[np.length - 1].push([xCoord(i), yCoord(nLengths[i])]);
-            }
-            if (i == days - 1) {
-                np[np.length - 1].push([left_padding + svg_width, top_padding + svg_height]);
-            }
-        }
-        else if (i != 0 && nLengths[i - 1] > 0) {
-            np[np.length - 1].push([xCoord(i + 0.5), top_padding + svg_height]);
-        }
-        // generate astronomical twilight polygons
-        if (aLengths[i] > 0) {
-            if (i == 0) {
-                ap[0].push([left_padding, top_padding + svg_height], [left_padding, yCoord(aLengths[0])]);
-            }
-            else if (aLengths[i - 1] == 0) {
-                ap.push([[xCoord(i - 0.5), top_padding + svg_height], [xCoord(i), yCoord(aLengths[i])]]);
-            }
-            else {
-                ap[ap.length - 1].push([xCoord(i), yCoord(aLengths[i])]);
-            }
-            if (i == days - 1) {
-                ap[ap.length - 1].push([left_padding + svg_width, top_padding + svg_height]);
-            }
-        }
-        else if (i != 0 && aLengths[i - 1] > 0) {
-            ap[ap.length - 1].push([xCoord(i + 0.5), top_padding + svg_height]);
-        }
-    }
-    // construct SVG diagram
+    // generate SVG diagram background
     let image_width = svg_width + left_padding + right_padding;
     let image_height = svg_height + top_padding + bottom_padding;
     let svg_string = svg_open(image_width, image_height);
     svg_string += rectangle_svg(0, 0, image_width, image_height, background_color); // white background
     svg_string += rectangle_svg(left_padding, top_padding, svg_width, svg_height, colors[4]); // night
-    for (let polygon of ap) {
-        svg_string += polygon_from_array(polygon, colors[3]);
-    } // astronomical twilight
-    for (let polygon of np) {
-        svg_string += polygon_from_array(polygon, colors[2]);
-    } // nautical twilight
-    for (let polygon of cp) {
-        svg_string += polygon_from_array(polygon, colors[1]);
-    } // civil twilight
-    for (let polygon of dp) {
-        svg_string += polygon_from_array(polygon, colors[0]);
-    } // daylight
+    if (length) { // day/twilight/night length plot
+        let dLengths = []; // day lengths
+        let cLengths = []; // day + civil twilight lengths
+        let nLengths = []; // day + civil + nautical twilight lengths
+        let aLengths = []; // day + civil + nautical + astronomical twilight lengths
+        for (let e of sun_events) {
+            let dur = lengths(e);
+            dLengths.push(dur[0]);
+            cLengths.push(dur[1]);
+            nLengths.push(dur[2]);
+            aLengths.push(dur[3]);
+        }
+        let dp = [[]]; // day polygons
+        let cp = [[]]; // civil twilight polygons
+        let np = [[]]; // nautical twilight polygons
+        let ap = [[]]; // astronomical twilight polygons
+        // generate polygons
+        for (let i = 0; i < days; i++) {
+            // generate day polygons
+            if (dLengths[i] > 0) {
+                if (i == 0) {
+                    dp[0].push([left_padding, top_padding + svg_height], [left_padding, yCoord(dLengths[0])]);
+                }
+                else if (dLengths[i - 1] == 0) {
+                    dp.push([[xCoord(i - 0.5), top_padding + svg_height], [xCoord(i), yCoord(dLengths[i])]]);
+                }
+                else {
+                    dp[dp.length - 1].push([xCoord(i), yCoord(dLengths[i])]);
+                }
+                if (i == days - 1) {
+                    dp[dp.length - 1].push([left_padding + svg_width, top_padding + svg_height]);
+                }
+            }
+            else if (i != 0 && dLengths[i - 1] > 0) {
+                dp[dp.length - 1].push([xCoord(i + 0.5), top_padding + svg_height]);
+            }
+            // generate civil twilight polygons
+            if (cLengths[i] > 0) {
+                if (i == 0) {
+                    cp[0].push([left_padding, top_padding + svg_height], [left_padding, yCoord(cLengths[0])]);
+                }
+                else if (cLengths[i - 1] == 0) {
+                    cp.push([[xCoord(i - 0.5), top_padding + svg_height], [xCoord(i), yCoord(cLengths[i])]]);
+                }
+                else {
+                    cp[cp.length - 1].push([xCoord(i), yCoord(cLengths[i])]);
+                }
+                if (i == days - 1) {
+                    cp[cp.length - 1].push([left_padding + svg_width, top_padding + svg_height]);
+                }
+            }
+            else if (i != 0 && cLengths[i - 1] > 0) {
+                cp[cp.length - 1].push([xCoord(i + 0.5), top_padding + svg_height]);
+            }
+            // generate nautical twilight polygons
+            if (nLengths[i] > 0) {
+                if (i == 0) {
+                    np[0].push([left_padding, top_padding + svg_height], [left_padding, yCoord(nLengths[0])]);
+                }
+                else if (nLengths[i - 1] == 0) {
+                    np.push([[xCoord(i - 0.5), top_padding + svg_height], [xCoord(i), yCoord(nLengths[i])]]);
+                }
+                else {
+                    np[np.length - 1].push([xCoord(i), yCoord(nLengths[i])]);
+                }
+                if (i == days - 1) {
+                    np[np.length - 1].push([left_padding + svg_width, top_padding + svg_height]);
+                }
+            }
+            else if (i != 0 && nLengths[i - 1] > 0) {
+                np[np.length - 1].push([xCoord(i + 0.5), top_padding + svg_height]);
+            }
+            // generate astronomical twilight polygons
+            if (aLengths[i] > 0) {
+                if (i == 0) {
+                    ap[0].push([left_padding, top_padding + svg_height], [left_padding, yCoord(aLengths[0])]);
+                }
+                else if (aLengths[i - 1] == 0) {
+                    ap.push([[xCoord(i - 0.5), top_padding + svg_height], [xCoord(i), yCoord(aLengths[i])]]);
+                }
+                else {
+                    ap[ap.length - 1].push([xCoord(i), yCoord(aLengths[i])]);
+                }
+                if (i == days - 1) {
+                    ap[ap.length - 1].push([left_padding + svg_width, top_padding + svg_height]);
+                }
+            }
+            else if (i != 0 && aLengths[i - 1] > 0) {
+                ap[ap.length - 1].push([xCoord(i + 0.5), top_padding + svg_height]);
+            }
+        }
+        // construct SVG day length diagram
+        for (let polygon of ap) {
+            svg_string += polygon_from_array(polygon, colors[3]);
+        } // astronomical twilight
+        for (let polygon of np) {
+            svg_string += polygon_from_array(polygon, colors[2]);
+        } // nautical twilight
+        for (let polygon of cp) {
+            svg_string += polygon_from_array(polygon, colors[1]);
+        } // civil twilight
+        for (let polygon of dp) {
+            svg_string += polygon_from_array(polygon, colors[0]);
+        } // daylight
+    }
+    else { // sunrise, sunset, dusk, dawn plot
+    }
     // draw y-axis and gridlines
     let x1 = show_gridlines ? left_padding : left_padding - 5;
     let x2 = show_gridlines ? left_padding + svg_width : left_padding;

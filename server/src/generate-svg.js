@@ -1,6 +1,6 @@
 import {allSunEvents, intervals, lengths} from "./suncalc.js";
 import {find} from "geo-tz";
-import {daylength_svg} from "./gen-svg.js";
+import {generate_svg} from "./gen-svg.js";
 import { DateTime } from "luxon";
 import fs from "fs";
 
@@ -17,15 +17,13 @@ let time_zone = find(lat, long)[0];
 let year = DateTime.now().setZone(time_zone).year;
 if (args.length == 6) {year = Number(args[4]);}
 
-let sunEventsYear = [];
+let sun_events = [];
 let date = DateTime.fromISO(`${year}-01-01`, {zone: time_zone});
 while (date.year == year) {
-    sunEventsYear.push(allSunEvents(lat, long, date));
+    sun_events.push(allSunEvents(lat, long, date));
     date = date.plus({days: 1});
 }
 
-let durations = [];
-for (let i of sunEventsYear) {durations.push(lengths(i));}
-let svg_text = daylength_svg(durations); // other settings are default
+let svg_text = generate_svg(sun_events, true); // other settings are default
 fs.writeFileSync(daylength_file_name, svg_text, "utf8");
 console.log(`File written to ${daylength_file_name}`);
