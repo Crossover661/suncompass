@@ -5,7 +5,7 @@
  */
 
 import SunTime from "./SunTime.js";
-import {intervals, lengths} from "./suncalc.js";
+import {intervals_svg, lengths} from "./suncalc.js";
 
 /** Generates the opening of an SVG */
 function svg_open(width: number, height: number) {
@@ -205,7 +205,7 @@ export function generate_svg(
         for (let polygon of dp) {svg_string += polygon_from_array(polygon, colors[0]);} // daylight
     }
     else { // sunrise, sunset, dusk, dawn plot
-
+        
     }
 
     // draw y-axis and gridlines

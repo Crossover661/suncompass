@@ -22,6 +22,7 @@ import { degToRad, sunPeriodicTerms } from "./constants.js";
 import * as fs from "fs";
 import SunTime from "./SunTime.js";
 const N_UNDEFINED = 2 ** 52;
+const DAY_LENGTH = 86400000;
 export function meanSunLongitude(JC) {
     JC += (approxDeltaT(JC) / 3155760000); // division by 3155760000 converts seconds to Julian centuries
     let U = JC / 100;
@@ -589,7 +590,7 @@ export function getSolsticeEquinox(year, month, zone = "utc") {
  * @param sunEvents Array returned by allSunEvents
  * @returns Array with intervals of [day, civil twilight, nautical twilight, astronomical twilight, night].
  */
-export function intervals(lat, long, date, sunEvents) {
+export function intervals(sunEvents) {
     let newSunEvents = []; // sunEvents without solar noon or midnight
     let ints = [[], [], [], [], []]; // intervals of day, civil twilight, nautical twilight, astronomical twilight, and night
     for (let event of sunEvents) {
@@ -598,7 +599,7 @@ export function intervals(lat, long, date, sunEvents) {
         }
     }
     if (newSunEvents.length == 0) { // no sunrise, sunset, dawn, or dusk
-        let sunAngle = sunPosition(lat, long, date)[0];
+        let sunAngle = sunEvents[0].solarElevation;
         if (sunAngle < -18) {
             return [[], [], [], [], [[0, 86400000]]];
         }
@@ -670,6 +671,117 @@ export function intervals(lat, long, date, sunEvents) {
     return ints;
 }
 /**
+ * Intervals of daylight and each stage of twilight for use in SVG diagram generation.
+ * @param sunEvents Value returned from the "allSunEvents" function on the given day.
+ * @returns Array of arrays of arrays of numbers: [dIntervals, cIntervals, nIntervals, aIntervals].
+ *
+ * dIntervals: Intervals of daylight, where the sun's unrefracted elevation angle >= -5/6°.
+ *
+ * cIntervals: Intervals of civil twilight or brighter (sun angle >= -6°).
+ *
+ * nIntervals: Intervals of nautical twilight or brighter (sun angle >= -12°).
+ *
+ * aIntervals: Intervals of astronomical twilight or brighter (sun angle >= -18°).
+ */
+export function intervals_svg(sunEvents) {
+    let newSunEvents = []; // sunEvents without solar noon or midnight
+    for (let event of sunEvents) {
+        if (event.eventType != "Solar Noon" && event.eventType != "Solar Midnight") {
+            newSunEvents.push(event);
+        }
+    }
+    if (newSunEvents.length == 0) { // no sunrise, sunset, dawn, or dusk
+        let s = sunEvents[0].solarElevation;
+        if (s < -18) {
+            return [[], [], [], []];
+        }
+        else if (s < -12) {
+            return [[], [], [], [[0, DAY_LENGTH]]];
+        }
+        else if (s < -6) {
+            return [[], [], [[0, DAY_LENGTH]], [[0, DAY_LENGTH]]];
+        }
+        else if (s < -5 / 6) {
+            return [[], [[0, DAY_LENGTH]], [[0, DAY_LENGTH]], [[0, DAY_LENGTH]]];
+        }
+        else {
+            return [[[0, DAY_LENGTH]], [[0, DAY_LENGTH]], [[0, DAY_LENGTH]], [[0, DAY_LENGTH]]];
+        }
+    }
+    let dIntervals = []; // intervals of daylight
+    let cIntervals = []; // daylight + civil twilight
+    let nIntervals = []; // daylight + civil twilight + nautical twilight
+    let aIntervals = []; // daylight + civil twilight + nautical twilight + astronomical twilight
+    let etype = newSunEvents[0].eventType;
+    let ms = convertToMS(newSunEvents[0].time);
+    // push the first interval
+    if (etype == "Nautical Dawn" || etype == "Astro Dusk") {
+        aIntervals.push([0, ms]);
+    }
+    else if (etype == "Civil Dawn" || etype == "Nautical Dusk") {
+        aIntervals.push([0, ms]);
+        nIntervals.push([0, ms]);
+    }
+    else if (etype == "Sunrise" || etype == "Civil Dusk") {
+        aIntervals.push([0, ms]);
+        nIntervals.push([0, ms]);
+        cIntervals.push([0, ms]);
+    }
+    else if (etype == "Sunset") {
+        aIntervals.push([0, ms]);
+        nIntervals.push([0, ms]);
+        cIntervals.push([0, ms]);
+        dIntervals.push([0, ms]);
+    }
+    for (let i = 1; i < newSunEvents.length; i++) {
+        etype = newSunEvents[i].eventType;
+        ms = convertToMS(newSunEvents[i].time);
+        if (etype == "Astro Dawn") {
+            aIntervals.push([ms, ms]);
+        }
+        else if (etype == "Nautical Dawn") {
+            nIntervals.push([ms, ms]);
+        }
+        else if (etype == "Civil Dawn") {
+            cIntervals.push([ms, ms]);
+        }
+        else if (etype == "Sunrise") {
+            dIntervals.push([ms, ms]);
+        }
+        else if (etype == "Sunset") {
+            dIntervals[dIntervals.length - 1][1] = ms;
+        }
+        else if (etype == "Civil Dusk") {
+            cIntervals[cIntervals.length - 1][1] = ms;
+        }
+        else if (etype == "Nautical Dusk") {
+            nIntervals[nIntervals.length - 1][1] = ms;
+        }
+        else if (etype == "Astro Dusk") {
+            aIntervals[aIntervals.length - 1][1] = ms;
+        }
+    }
+    if (etype == "Astro Dawn" || etype == "Nautical Dusk") {
+        aIntervals[aIntervals.length - 1][1] = DAY_LENGTH;
+    }
+    else if (etype == "Nautical Dawn" || etype == "Civil Dusk") {
+        aIntervals[aIntervals.length - 1][1] = DAY_LENGTH;
+        nIntervals[nIntervals.length - 1][1] = DAY_LENGTH;
+    }
+    else if (etype == "Civil Dawn" || etype == "Sunset") {
+        aIntervals[aIntervals.length - 1][1] = DAY_LENGTH;
+        nIntervals[nIntervals.length - 1][1] = DAY_LENGTH;
+        cIntervals[cIntervals.length - 1][1] = DAY_LENGTH;
+    }
+    else if (etype == "Sunrise") {
+        aIntervals[aIntervals.length - 1][1] = DAY_LENGTH;
+        nIntervals[nIntervals.length - 1][1] = DAY_LENGTH;
+        cIntervals[cIntervals.length - 1][1] = DAY_LENGTH;
+        dIntervals[dIntervals.length - 1][1] = DAY_LENGTH;
+    }
+    return [dIntervals, cIntervals, nIntervals, aIntervals];
+}
+/**
  * Returns the lengths of day combined with different stages of twilight.
  * @param sunEvents The return value of the allSunEvents command at a particular place and date.
  * @returns An array [t0, t1, t2, t3]. The values are as follows:
@@ -680,7 +792,6 @@ export function intervals(lat, long, date, sunEvents) {
  */
 export function lengths(sunEvents) {
     let newSunEvents = []; // sunEvents without solar noon or midnight
-    const DAY_LENGTH = 86400000;
     let durations = [0, 0, 0, 0]; // durations
     for (let event of sunEvents) {
         if (event.eventType != "Solar Noon" && event.eventType != "Solar Midnight") {
