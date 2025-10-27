@@ -167,7 +167,7 @@ export function generate_svg(sun_events, type, svg_width = 1000, svg_height = 50
     for (let i = 0; i < 12; i++) {
         let x = xCoord(month_edges(days != 365)[i]);
         let xText = (x + xCoord(month_edges(days != 365)[i + 1])) / 2;
-        svg_string += text_svg(months(language)[i], xText, top_padding + svg_height + 5, text_size, font, text_color, "middle", "text-before-edge");
+        svg_string += text_svg(months(language)[i], xText, top_padding + svg_height + 12, text_size, font, text_color, "middle", "middle");
         svg_string += line_svg(x, y1, x, y2, grid_color, gridline_width);
     }
     svg_string += line_svg(left_padding + svg_width, y1, left_padding + svg_width, y2, grid_color, gridline_width);
