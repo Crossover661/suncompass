@@ -24,6 +24,7 @@ while (date.year == year) {
     date = date.plus({days: 1});
 }
 
-let svg_text = generate_svg(sun_events, true); // other settings are default
+let svg_text = generate_svg(sun_events, "length"); // other settings are default
 fs.writeFileSync(daylength_file_name, svg_text, "utf8");
+let x = generate_svg(sun_events, "rise-set");
 console.log(`File written to ${daylength_file_name}`);

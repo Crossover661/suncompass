@@ -6,8 +6,10 @@ import {direction} from "./mathfuncs.js";
 
 let [lat, long] = [34.42, -119.85];
 let date = suncalc.junSolstice(2025, find(lat, long));
-const start = Date.now();
-const iterations = 1;
-for (let i=0; i<iterations; i++) {suncalc.allSunEvents(lat + i/iterations, long + i/iterations, date);}
-const end = Date.now();
-console.log(end - start);
+const curDate = DateTime.now();
+let ints = suncalc.intervals_svg(suncalc.allSunEvents(lat, long, curDate));
+console.log("[");
+for (let int of ints[0]) {
+    console.log(`[ ${int[0]} ${int[1]}]`);
+}
+console.log("]");

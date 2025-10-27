@@ -638,23 +638,34 @@ export function intervals_svg(sunEvents: SunTime[]) {
     let ms = convertToMS(newSunEvents[0].time);
 
     // push the first interval
-    if (etype == "Nautical Dawn" || etype == "Astro Dusk") {
+    if (etype == "Astro Dawn") {
+        aIntervals.push([ms, ms]);
+    } else if (etype == "Nautical Dawn") {
         aIntervals.push([0, ms]);
-    }
-    else if (etype == "Civil Dawn" || etype == "Nautical Dusk") {
+        nIntervals.push([ms, ms]);
+    } else if (etype == "Civil Dawn") {
         aIntervals.push([0, ms]);
         nIntervals.push([0, ms]);
-    }
-    else if (etype == "Sunrise" || etype == "Civil Dusk") {
+        cIntervals.push([ms, ms]);
+    } else if (etype == "Sunrise") {
         aIntervals.push([0, ms]);
         nIntervals.push([0, ms]);
         cIntervals.push([0, ms]);
-    }
-    else if (etype == "Sunset") {
+        dIntervals.push([ms, ms]);
+    } else if (etype == "Sunset") {
         aIntervals.push([0, ms]);
         nIntervals.push([0, ms]);
         cIntervals.push([0, ms]);
         dIntervals.push([0, ms]);
+    } else if (etype == "Civil Dusk") {
+        aIntervals.push([0, ms]);
+        nIntervals.push([0, ms]);
+        cIntervals.push([0, ms]);
+    } else if (etype == "Nautical Dusk") {
+        aIntervals.push([0, ms]);
+        nIntervals.push([0, ms]);
+    } else if (etype == "Astro Dusk") {
+        aIntervals.push([0, ms]);
     }
 
     for (let i=1; i<newSunEvents.length; i++) {
