@@ -163,7 +163,7 @@ export function generate_svg(
     let image_height = svg_height + top_padding + bottom_padding;
     let svg_string = svg_open(image_width, image_height);
     svg_string += rectangle_svg(0, 0, image_width, image_height, background_color); // white background
-    svg_string += rectangle_svg(left_padding, top_padding, svg_width, svg_height, colors[4]); // night
+    svg_string += rectangle_svg(left_padding, top_padding, svg_width, svg_height, colors[colors.length-1]); // night
 
     if (type == "length") { // day/twilight/night length plot
         let dLengths: number[] = []; // day lengths
