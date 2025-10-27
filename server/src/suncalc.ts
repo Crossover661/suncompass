@@ -639,30 +639,30 @@ export function intervals_svg(sunEvents: SunTime[]) {
 
     // push the first interval
     if (etype == "Astro Dawn") {
-        aIntervals.push([ms, ms]);
+        aIntervals.push([ms, DAY_LENGTH]);
     } else if (etype == "Nautical Dawn") {
-        aIntervals.push([0, ms]);
-        nIntervals.push([ms, ms]);
+        aIntervals.push([0, DAY_LENGTH]);
+        nIntervals.push([ms, DAY_LENGTH]);
     } else if (etype == "Civil Dawn") {
-        aIntervals.push([0, ms]);
-        nIntervals.push([0, ms]);
-        cIntervals.push([ms, ms]);
+        aIntervals.push([0, DAY_LENGTH]);
+        nIntervals.push([0, DAY_LENGTH]);
+        cIntervals.push([ms, DAY_LENGTH]);
     } else if (etype == "Sunrise") {
-        aIntervals.push([0, ms]);
-        nIntervals.push([0, ms]);
-        cIntervals.push([0, ms]);
-        dIntervals.push([ms, ms]);
+        aIntervals.push([0, DAY_LENGTH]);
+        nIntervals.push([0, DAY_LENGTH]);
+        cIntervals.push([0, DAY_LENGTH]);
+        dIntervals.push([ms, DAY_LENGTH]);
     } else if (etype == "Sunset") {
-        aIntervals.push([0, ms]);
-        nIntervals.push([0, ms]);
-        cIntervals.push([0, ms]);
+        aIntervals.push([0, DAY_LENGTH]);
+        nIntervals.push([0, DAY_LENGTH]);
+        cIntervals.push([0, DAY_LENGTH]);
         dIntervals.push([0, ms]);
     } else if (etype == "Civil Dusk") {
-        aIntervals.push([0, ms]);
-        nIntervals.push([0, ms]);
+        aIntervals.push([0, DAY_LENGTH]);
+        nIntervals.push([0, DAY_LENGTH]);
         cIntervals.push([0, ms]);
     } else if (etype == "Nautical Dusk") {
-        aIntervals.push([0, ms]);
+        aIntervals.push([0, DAY_LENGTH]);
         nIntervals.push([0, ms]);
     } else if (etype == "Astro Dusk") {
         aIntervals.push([0, ms]);
@@ -671,34 +671,16 @@ export function intervals_svg(sunEvents: SunTime[]) {
     for (let i=1; i<newSunEvents.length; i++) {
         etype = newSunEvents[i].eventType;
         ms = convertToMS(newSunEvents[i].time);
-        if (etype == "Astro Dawn") {aIntervals.push([ms, ms]);}
-        else if (etype == "Nautical Dawn") {nIntervals.push([ms, ms]);}
-        else if (etype == "Civil Dawn") {cIntervals.push([ms, ms]);}
-        else if (etype == "Sunrise") {dIntervals.push([ms, ms]);}
+        if (etype == "Astro Dawn") {aIntervals.push([ms, DAY_LENGTH]);}
+        else if (etype == "Nautical Dawn") {nIntervals.push([ms, DAY_LENGTH]);}
+        else if (etype == "Civil Dawn") {cIntervals.push([ms, DAY_LENGTH]);}
+        else if (etype == "Sunrise") {dIntervals.push([ms, DAY_LENGTH]);}
         else if (etype == "Sunset") {dIntervals[dIntervals.length-1][1] = ms;}
         else if (etype == "Civil Dusk") {cIntervals[cIntervals.length-1][1] = ms;}
         else if (etype == "Nautical Dusk") {nIntervals[nIntervals.length-1][1] = ms;}
         else if (etype == "Astro Dusk") {aIntervals[aIntervals.length-1][1] = ms;}
     }
 
-    if (etype == "Astro Dawn" || etype == "Nautical Dusk") {
-        aIntervals[aIntervals.length-1][1] = DAY_LENGTH;
-    }
-    else if (etype == "Nautical Dawn" || etype == "Civil Dusk") {
-        aIntervals[aIntervals.length-1][1] = DAY_LENGTH;
-        nIntervals[nIntervals.length-1][1] = DAY_LENGTH;
-    }
-    else if (etype == "Civil Dawn" || etype == "Sunset") {
-        aIntervals[aIntervals.length-1][1] = DAY_LENGTH;
-        nIntervals[nIntervals.length-1][1] = DAY_LENGTH;
-        cIntervals[cIntervals.length-1][1] = DAY_LENGTH;
-    }
-    else if (etype == "Sunrise") {
-        aIntervals[aIntervals.length-1][1] = DAY_LENGTH;
-        nIntervals[nIntervals.length-1][1] = DAY_LENGTH;
-        cIntervals[cIntervals.length-1][1] = DAY_LENGTH;
-        dIntervals[dIntervals.length-1][1] = DAY_LENGTH;
-    }
     return [dIntervals, cIntervals, nIntervals, aIntervals];
 }
 
