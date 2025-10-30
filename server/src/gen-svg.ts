@@ -326,7 +326,7 @@ export function generate_svg(
         }
         for (let line of groups) { // convert to SVG coordinates
             for (let point of line) {
-                point[0] = xCoord(point[0]);
+                point[0] = xCoord(point[0]+0.5);
                 point[1] = yCoord(point[1]);
             }
         }
@@ -365,7 +365,7 @@ export function generate_svg(
         }
         for (let line of groups) { // convert to SVG coordinates
             for (let point of line) {
-                point[0] = xCoord(point[0]);
+                point[0] = xCoord(point[0]+0.5);
                 point[1] = yCoord(point[1]);
             }
         }
