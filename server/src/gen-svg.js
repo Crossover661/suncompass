@@ -3,7 +3,7 @@
  * "daylength_svg" generates an SVG file showing (from top to bottom) the lengths of day, civil twilight, nautical twilight, astronomical
  * twilight and night for an entire year
  */
-import { clamp, convertToMS } from "./mathfuncs.js";
+import { convertToMS } from "./mathfuncs.js";
 import { intervals_svg, lengths } from "./suncalc.js";
 import { DateTime } from "luxon";
 const svg_close = "</svg>";
@@ -57,10 +57,10 @@ function months(language = "en") {
 /** Edges of the months, used for drawing gridlines. */
 function month_edges(leap_year = false) {
     if (leap_year) {
-        return [0, 30.5, 59.5, 90.5, 120.5, 151.5, 181.5, 212.5, 243.5, 273.5, 304.5, 334.5, 365];
+        return [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
     }
     else {
-        return [0, 30.5, 58.5, 89.5, 119.5, 150.5, 180.5, 211.5, 242.5, 272.5, 303.5, 333.5, 364];
+        return [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
     }
 }
 // EPS for key-stability with fractional coords
@@ -218,7 +218,7 @@ function intervals_to_polygon(intervals) {
 export function generate_svg(sun_events, type, solstices_equinoxes = [], svg_width = 1000, svg_height = 500, left_padding = 25, right_padding = 10, top_padding = 10, bottom_padding = 25, text_size = 12, font = "Arial", text_color = "#000000", background_color = "#ffffff", language = "en", show_gridlines = true, grid_interval = 2, grid_color = "#808080", gridline_width = 0.5) {
     const days = sun_events.length; // 365 days for common years, 366 for leap years
     /** x-coordinate representing given day */
-    function xCoord(dayNumber) { return left_padding + svg_width * (dayNumber / (days - 1)); }
+    function xCoord(dayNumber) { return left_padding + svg_width * (dayNumber / days); }
     /** y-coordinate representing day length */
     function yCoord(dayLength) { return top_padding + svg_height * (1 - dayLength / DAY_LENGTH); }
     function durations_to_array(durations) {
@@ -226,20 +226,20 @@ export function generate_svg(sun_events, type, solstices_equinoxes = [], svg_wid
         for (let i = 0; i < days; i++) {
             if (durations[i] > 0) {
                 if (i == 0) {
-                    p[0].push([left_padding, top_padding + svg_height], [left_padding, yCoord(durations[0])]);
+                    p[0].push([left_padding, yCoord(0)], [left_padding, yCoord(durations[0])], [xCoord(1), yCoord(durations[0])]);
                 }
                 else if (durations[i - 1] == 0) {
-                    p.push([[xCoord(i - 0.5), top_padding + svg_height], [xCoord(i), yCoord(durations[i])]]);
+                    p.push([[xCoord(i), yCoord(0)], [xCoord(i), yCoord(durations[i])]]);
                 }
                 else {
-                    p[p.length - 1].push([xCoord(i), yCoord(durations[i])]);
+                    p[p.length - 1].push([xCoord(i), yCoord(durations[i])], [xCoord(i + 1), yCoord(durations[i])]);
                 }
                 if (i == days - 1) {
                     p[p.length - 1].push([left_padding + svg_width, top_padding + svg_height]);
                 }
             }
             else if (i != 0 && durations[i - 1] > 0) {
-                p[p.length - 1].push([xCoord(i + 0.5), top_padding + svg_height]);
+                p[p.length - 1].push([xCoord(i + 1), top_padding + svg_height]);
             }
         }
         return p;
@@ -334,7 +334,7 @@ export function generate_svg(sun_events, type, solstices_equinoxes = [], svg_wid
         let polygons = intervals_to_polygon(intervals);
         for (let polygon of polygons) {
             for (let point of polygon) {
-                point[0] = xCoord(clamp(point[0] - 0.5, 0, days - 1));
+                point[0] = xCoord(point[0]);
                 point[1] = yCoord(point[1]);
             }
         }
@@ -409,7 +409,7 @@ export function generate_svg(sun_events, type, solstices_equinoxes = [], svg_wid
     // draw solstices and equinoxes as green lines
     for (let date of solstices_equinoxes) {
         let new_year = DateTime.fromISO(`${date.year}-01-01`, { zone: date.zone });
-        let x = xCoord(date.diff(new_year, ['days', 'hours']).days);
+        let x = xCoord(date.diff(new_year, ['days', 'hours']).days + 0.5);
         svg_string += line_svg(x, top_padding, x, top_padding + svg_height, "#00c000", 1);
     }
     // draw y-axis and gridlines
