@@ -225,21 +225,18 @@ export function generate_svg(sun_events, type, solstices_equinoxes = [], svg_wid
         let p = [[]]; // p is short for polygons
         for (let i = 0; i < days; i++) {
             if (durations[i] > 0) {
-                if (i == 0) {
-                    p[0].push([left_padding, yCoord(0)], [left_padding, yCoord(durations[0])], [xCoord(1), yCoord(durations[0])]);
-                }
-                else if (durations[i - 1] == 0) {
-                    p.push([[xCoord(i), yCoord(0)], [xCoord(i), yCoord(durations[i])]]);
+                if (i == 0 || durations[i - 1] == 0) {
+                    p[0].push([xCoord(i), yCoord(0)], [xCoord(i), yCoord(durations[i])], [xCoord(i + 1), yCoord(durations[i])]);
                 }
                 else {
                     p[p.length - 1].push([xCoord(i), yCoord(durations[i])], [xCoord(i + 1), yCoord(durations[i])]);
                 }
                 if (i == days - 1) {
-                    p[p.length - 1].push([left_padding + svg_width, top_padding + svg_height]);
+                    p[p.length - 1].push([xCoord(days), yCoord(0)]);
                 }
             }
             else if (i != 0 && durations[i - 1] > 0) {
-                p[p.length - 1].push([xCoord(i + 1), top_padding + svg_height]);
+                p[p.length - 1].push([xCoord(i), yCoord(0)]);
             }
         }
         return p;
