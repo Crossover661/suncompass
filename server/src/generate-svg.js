@@ -17,7 +17,7 @@ if (args.length != 4 && args.length != 5) {
 let [lat, long] = [Number(args[2]), Number(args[3])];
 let time_zone = find(lat, long)[0];
 let year = DateTime.now().setZone(time_zone).year;
-if (args.length == 6) {year = Number(args[4]);}
+if (args.length == 5) {year = Number(args[4]);}
 
 let sun_events = [];
 let date = DateTime.fromISO(`${year}-01-01`, {zone: time_zone});
@@ -27,10 +27,10 @@ while (date.year == year) {
 }
 
 let solstices_equinoxes = [
-    getSolsticeEquinox(2025, 3, time_zone),
-    getSolsticeEquinox(2025, 6, time_zone),
-    getSolsticeEquinox(2025, 9, time_zone),
-    getSolsticeEquinox(2025, 12, time_zone)
+    getSolsticeEquinox(year, 3, time_zone),
+    getSolsticeEquinox(year, 6, time_zone),
+    getSolsticeEquinox(year, 9, time_zone),
+    getSolsticeEquinox(year, 12, time_zone)
 ];
 let daylength_svg = generate_svg(sun_events, "length", solstices_equinoxes);
 fs.writeFileSync(daylength_file_name, daylength_svg, "utf8");
