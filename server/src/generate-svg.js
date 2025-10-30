@@ -1,10 +1,12 @@
-import {allSunEvents, intervals, lengths} from "./suncalc.js";
+import {allSunEvents, intervals, lengths, getSolsticeEquinox} from "./suncalc.js";
 import {find} from "geo-tz";
 import {generate_svg} from "./gen-svg.js";
 import { DateTime } from "luxon";
 import fs from "fs";
+import { setUncaughtExceptionCaptureCallback } from "process";
 
 const daylength_file_name = "day-lengths.svg";
+const riseset_file_name = "sunrise-sunset.svg";
 
 let args = process.argv;
 if (args.length != 4 && args.length != 5) {
@@ -24,7 +26,16 @@ while (date.year == year) {
     date = date.plus({days: 1});
 }
 
-let svg_text = generate_svg(sun_events, "length"); // other settings are default
-fs.writeFileSync(daylength_file_name, svg_text, "utf8");
-let x = generate_svg(sun_events, "rise-set");
+let solstices_equinoxes = [
+    getSolsticeEquinox(2025, 3, time_zone),
+    getSolsticeEquinox(2025, 6, time_zone),
+    getSolsticeEquinox(2025, 9, time_zone),
+    getSolsticeEquinox(2025, 12, time_zone)
+];
+let daylength_svg = generate_svg(sun_events, "length", solstices_equinoxes);
+fs.writeFileSync(daylength_file_name, daylength_svg, "utf8");
 console.log(`File written to ${daylength_file_name}`);
+
+let riseset_svg = generate_svg(sun_events, "rise-set", solstices_equinoxes);
+fs.writeFileSync(riseset_file_name, riseset_svg, "utf8");
+console.log(`File written to ${riseset_file_name}`);

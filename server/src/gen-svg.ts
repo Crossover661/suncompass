@@ -4,10 +4,15 @@
  * twilight and night for an entire year
  */
 
+import { isNullishCoalesce, ScriptSnapshot } from "../../node_modules/typescript/lib/typescript.js";
 import SunTime from "./SunTime.js";
+import {clamp} from "./mathfuncs.js";
 import {intervals_svg, lengths} from "./suncalc.js";
+import {DateTime} from "luxon";
+type Event = { y: number; d: 1 | -1 }; // used as helper in xor_spans and intervals_to_polygon
 
 const svg_close = "</svg>";
+const sun_colors = ["#80c0ff", "#0060c0", "#004080", "#002040", "#000000"];
 const DAY_LENGTH = 86400000; // milliseconds in a day
 
 /** Generates the opening of an SVG */
@@ -80,29 +85,159 @@ function month_edges(leap_year: boolean = false) {
     else {return [0,30.5,58.5,89.5,119.5,150.5,180.5,211.5,242.5,272.5,303.5,333.5,364];}
 }
 
+type Seg = { a: number[]; b: number[] };
+
+// EPS for key-stability with fractional coords
+const SNAP = 1e-6;
+const snap = (v: number) => Math.round(v / SNAP) * SNAP;
+
+function intervals_to_polygon(intervals: number[][][]): number[][][] {
+    const normalizeSpans = (spans: number[][]): number[][] => {
+        if (!spans || spans.length === 0) return [];
+        const s = spans
+            .map(([a, b]) => [Math.min(a, b), Math.max(a, b)] as [number, number])
+            .sort((u, v) => (u[0] - v[0]) || (u[1] - v[1]));
+        const out: number[][] = [];
+        for (const [a, b] of s) {
+            if (out.length === 0 || a > out[out.length - 1][1]) {
+                out.push([a, b]);
+            } else {
+                out[out.length - 1][1] = Math.max(out[out.length - 1][1], b);
+            }
+        }
+        return out;
+    };
+
+    // symmetric difference of two disjoint, sorted span lists
+    const xorSpans = (A: number[][], B: number[][]): number[][] => {
+        const evts: { y: number; d: number }[] = [];
+        for (const [a, b] of A) { evts.push({ y: a, d: +1 }, { y: b, d: -1 }); }
+        for (const [a, b] of B) { evts.push({ y: a, d: +1 }, { y: b, d: -1 }); }
+        evts.sort((u, v) => (u.y - v.y) || (v.d - u.d)); // starts before ends at same y
+        const out: number[][] = [];
+        let inside = 0;
+        let y0 = 0;
+        for (const { y, d } of evts) {
+            if (inside === 1) out.push([y0, y]);
+            inside = (inside + d) & 1;
+            y0 = y;
+        }
+        return out;
+    };
+
+    const keyOf = (p: number[]) => `${snap(p[0])}:${snap(p[1])}`;
+
+    const segKey = (u: number[], v: number[]) => {
+        const ux = snap(u[0]), uy = snap(u[1]);
+        const vx = snap(v[0]), vy = snap(v[1]);
+        return (ux < vx || (ux === vx && uy <= vy))
+            ? `${ux}:${uy}->${vx}:${vy}`
+            : `${vx}:${vy}->${ux}:${uy}`;
+    };
+
+    const addAdj = (adj: Map<string, number[][]>, u: number[], v: number[]) => {
+        const ku = keyOf(u), kv = keyOf(v);
+        if (!adj.has(ku)) adj.set(ku, []);
+        if (!adj.has(kv)) adj.set(kv, []);
+        adj.get(ku)!.push([snap(v[0]), snap(v[1])]);
+        adj.get(kv)!.push([snap(u[0]), snap(u[1])]);
+    };
+
+    // ---- build segments ----
+    const W = intervals.length;
+    const cols = Array.from({ length: W }, (_, x) => normalizeSpans(intervals[x] || []));
+
+    const horizontal: Seg[] = [];
+    for (let x = 0; x < W; x++) {
+        for (const [a, b] of cols[x]) {
+            horizontal.push({ a: [x, a], b: [x + 1, a] }); // bottom cap
+            horizontal.push({ a: [x, b], b: [x + 1, b] }); // top cap
+        }
+    }
+
+    const vertical: Seg[] = [];
+    for (let x = 0; x <= W; x++) {
+        const L = x > 0 ? cols[x - 1] : [];
+        const R = x < W ? cols[x] : [];
+        const diff = xorSpans(L, R);
+        for (const [a, b] of diff) {
+            vertical.push({ a: [x, a], b: [x, b] });
+        }
+    }
+
+    const segs: Seg[] = vertical.concat(horizontal).map(({ a, b }) => ({
+        a: [snap(a[0]), snap(a[1])],
+        b: [snap(b[0]), snap(b[1])]
+    }));
+
+    // ---- stitch into rings ----
+    const adj = new Map<string, number[][]>();
+    for (const { a, b } of segs) addAdj(adj, a, b);
+
+    const used = new Set<string>();
+    const polygons: number[][][] = [];
+
+    for (const { a, b } of segs) {
+        const startEdge = segKey(a, b);
+        if (used.has(startEdge)) continue;
+
+        // seed walk with the exact edge (a -> b)
+        used.add(startEdge);
+
+        const polygon: number[][] = [];
+        polygon.push([snap(a[0]), snap(a[1])]);
+
+        let prev = [snap(a[0]), snap(a[1])];
+        let curr = [snap(b[0]), snap(b[1])];
+
+        while (true) {
+            polygon.push(curr);
+
+            const nbrs = adj.get(keyOf(curr)) || [];
+            // choose neighbor that's NOT prev, prefer the one whose edge isn't used yet
+            let next: number[] | undefined;
+            for (const cand of nbrs) {
+                if (cand[0] === prev[0] && cand[1] === prev[1]) continue;
+                const k = segKey(curr, cand);
+                if (!used.has(k)) { next = cand; break; }
+            }
+            if (!next) break; // should not happen if all loops are closed
+
+            used.add(segKey(curr, next));
+            prev = curr;
+            curr = next;
+
+            if (curr[0] === polygon[0][0] && curr[1] === polygon[0][1]) break; // closed
+        }
+
+        if (polygon.length >= 4) {polygons.push(polygon);}
+    }
+
+    return polygons;
+}
+
 /**
  * Returns a string containing an SVG diagram for either day/twilight/night lengths throughout the year, or the times of day in which
  * day, night, and each stage of twilight occur.
  * @param sun_events Values of "allSunEvents" for each day of the year.
  * @param type Set to "length" to generate a day/night/twilight length chart, or "rise-set" to generate a chart with times of day.
+ * @param solstices_equinoxes Solstices and equinoxes for the given year, as an array of four DateTimes.
  * @param svg_width Width of the chart (not the entire SVG file). Defaults to 1000.
  * @param svg_height Height of the chart (not the entire SVG file). Defaults to 500.
- * @param language The language used for month abbreviations, represented as a 2-letter code for example "en" for English, "es" for Spanish
- * or "zh" for Mandarin Chinese. Defaults to "en" (English).
- * @param background_color The background color of the SVG file. Defaults to #ffffff (white).
- * @param text_size The font size to use for the axis labels. Defaults to 12.
- * @param font The font family to use for the axis labels. Defaults to Arial.
- * @param text_color Color of text in axis labels. Defaults to #000000 (black).
- * @param show_gridlines Whether to show the gridlines overlaid on the carpet plot. Defaults to "true".
- * @param grid_interval Y axis interval. Defaults to 2 (i.e. 2 hours between gridlines)
- * @param grid_color Colors of gridlines. Defaults to #808080 (medium gray).
- * @param gridline_width Width of gridlines. Defaults to 0.5 (pixels).
- * @param colors An array of 5 strings with the hex colors to use for daylight, civil twilight, nautical twilight, astronomical twilight
- * and night respectively. Defaults to ["#80c0ff", "#0060c0", "#004080", "#002040", "#000000"].
  * @param left_padding Padding to the left of the carpet plot. Defaults to 25 pixels.
  * @param right_padding Padding to the right of the carpet plot. Defaults to 10 pixels.
  * @param top_padding Padding above the carpet plot. Defaults to 10 pixels.
  * @param bottom_padding Padding below the carpet plot. Defaults to 25 pixels.
+ * @param text_size The font size to use for the axis labels. Defaults to 12.
+ * @param font The font family to use for the axis labels. Defaults to Arial.
+ * @param text_color Color of text in axis labels. Defaults to #000000 (black).
+ * @param background_color The background color of the SVG file. Defaults to #ffffff (white).
+ * @param language The language used for month abbreviations, represented as a 2-letter code for example "en" for English, "es" for Spanish
+ * or "zh" for Mandarin Chinese. Defaults to "en" (English).
+ * @param show_gridlines Whether to show the gridlines overlaid on the carpet plot. Defaults to "true".
+ * @param grid_interval Y axis interval. Defaults to 2 (i.e. 2 hours between gridlines)
+ * @param grid_color Colors of gridlines. Defaults to #808080 (medium gray).
+ * @param gridline_width Width of gridlines. Defaults to 0.5 (pixels).
  * @returns A string for the carpet plot, with gridlines and axis labels, that can be saved into an SVG file.
  * The total width of the SVG file is equal to svg_width + left_padding + right_padding. The height is equal to svg_height + top_padding +
  * bottom_padding.
@@ -110,22 +245,22 @@ function month_edges(leap_year: boolean = false) {
 export function generate_svg(
     sun_events: SunTime[][],
     type: string,
+    solstices_equinoxes: DateTime[] = [],
     svg_width: number = 1000,
     svg_height: number = 500,
-    language: string = "en",
-    background_color: string = "#ffffff",
+    left_padding: number = 25,
+    right_padding: number = 10,
+    top_padding: number = 10,
+    bottom_padding: number = 25,
     text_size: number = 12,
     font: string = "Arial",
     text_color: string = "#000000",
+    background_color: string = "#ffffff",
+    language: string = "en",
     show_gridlines: boolean = true,
     grid_interval: number = 2,
     grid_color: string = "#808080",
     gridline_width: number = 0.5,
-    colors: string[] = ["#80c0ff", "#0060c0", "#004080", "#002040", "#000000"],
-    left_padding: number = 25,
-    right_padding: number = 10,
-    top_padding: number = 10,
-    bottom_padding: number = 25
 ): string
 {
     const days = sun_events.length; // 365 days for common years, 366 for leap years
@@ -135,12 +270,6 @@ export function generate_svg(
 
     /** y-coordinate representing day length */
     function yCoord(dayLength: number) {return top_padding + svg_height * (1 - dayLength / DAY_LENGTH);}
-
-    /** Determines whether two time intervals are contiguous (with DST adjustment) */
-    function interval_contiguous([a1, a2]: number[], [b1, b2]: number[]) {
-        return ((a1 <= b2 && b1 <= a2) || (a1+DAY_LENGTH/24 <= b2 && b1 <= a2+DAY_LENGTH/24) || 
-        (a1-DAY_LENGTH/24 <= b2 && b1 <= a2-DAY_LENGTH/24));
-    }
 
     function durations_to_array(durations: number[]): number[][][] {
         let p: number[][][] = [[]]; // p is short for polygons
@@ -158,12 +287,24 @@ export function generate_svg(
         return p;
     }
 
+    function to_polygons(intervals: number[][][], color: string): string[] {
+        let polygons = intervals_to_polygon(intervals);
+        for (let polygon of polygons) {
+            for (let point of polygon) {
+                point[0] = xCoord(clamp(point[0]-0.5, 0, days-1));
+                point[1] = yCoord(point[1]);
+            }
+        }
+        let strings: string[] = [];
+        for (let polygon of polygons) {strings.push(polygon_from_array(polygon, color));}
+        return strings;
+    }
+
     // generate SVG diagram background
     let image_width = svg_width + left_padding + right_padding;
     let image_height = svg_height + top_padding + bottom_padding;
     let svg_string = svg_open(image_width, image_height);
     svg_string += rectangle_svg(0, 0, image_width, image_height, background_color); // white background
-    svg_string += rectangle_svg(left_padding, top_padding, svg_width, svg_height, colors[colors.length-1]); // night
 
     if (type == "length") { // day/twilight/night length plot
         let dLengths: number[] = []; // day lengths
@@ -183,12 +324,35 @@ export function generate_svg(
         let ap = durations_to_array(aLengths); // astronomical twilight polygons
         
         // construct SVG day length diagram
-        for (let polygon of ap) {svg_string += polygon_from_array(polygon, colors[3]);} // astronomical twilight
-        for (let polygon of np) {svg_string += polygon_from_array(polygon, colors[2]);} // nautical twilight
-        for (let polygon of cp) {svg_string += polygon_from_array(polygon, colors[1]);} // civil twilight
-        for (let polygon of dp) {svg_string += polygon_from_array(polygon, colors[0]);} // daylight
+        svg_string += rectangle_svg(left_padding, top_padding, svg_width, svg_height, sun_colors[4]); // night
+        for (let polygon of ap) {svg_string += polygon_from_array(polygon, sun_colors[3]);} // astronomical twilight
+        for (let polygon of np) {svg_string += polygon_from_array(polygon, sun_colors[2]);} // nautical twilight
+        for (let polygon of cp) {svg_string += polygon_from_array(polygon, sun_colors[1]);} // civil twilight
+        for (let polygon of dp) {svg_string += polygon_from_array(polygon, sun_colors[0]);} // daylight
     }
-    else { // sunrise, sunset, dusk, dawn plot
+    else if (type == "rise-set") { // sunrise, sunset, dusk, dawn plot
+        let a_intervals: number[][][] = []; // intervals of astronomical twilight or brighter
+        let n_intervals: number[][][] = []; // intervals of nautical twilight or brighter
+        let c_intervals: number[][][] = []; // intervals of civil twilight or brighter
+        let d_intervals: number[][][] = []; // intervals of daylight
+
+        for (let event of sun_events) {
+            let int = intervals_svg(event);
+            a_intervals.push(int[3]);
+            n_intervals.push(int[2]);
+            c_intervals.push(int[1]);
+            d_intervals.push(int[0]);
+        }
+        
+        let a_polygons = to_polygons(a_intervals, sun_colors[3]); // astronomical twilight
+        let n_polygons = to_polygons(n_intervals, sun_colors[2]); // nautical twilight
+        let c_polygons = to_polygons(c_intervals, sun_colors[1]); // civil twilight
+        let d_polygons = to_polygons(d_intervals, sun_colors[0]); // daylight
+
+        let all_polygons = [...a_polygons, ...n_polygons, ...c_polygons, ...d_polygons];
+
+        svg_string += rectangle_svg(left_padding, top_padding, svg_width, svg_height, sun_colors[4]); // night
+        for (let polygon of all_polygons) {svg_string += polygon;} // twilight + daylight
     }
 
     // draw y-axis and gridlines
@@ -210,6 +374,13 @@ export function generate_svg(
         svg_string += line_svg(x, y1, x, y2, grid_color, gridline_width);
     }
     svg_string += line_svg(left_padding+svg_width, y1, left_padding+svg_width, y2, grid_color, gridline_width);
+
+    // draw solstices and equinoxes
+    for (let date of solstices_equinoxes) {
+        let new_year = DateTime.fromISO(`${date.year}-01-01`, {zone: date.zone});
+        let x = xCoord(date.diff(new_year, ['days', 'hours']).days);
+        svg_string += line_svg(x, top_padding, x, top_padding+svg_height, "#00c000", 1);
+    }
 
     // complete SVG diagram
     svg_string += svg_close;
