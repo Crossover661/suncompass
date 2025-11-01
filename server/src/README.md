@@ -35,6 +35,20 @@ either in IANA time zone format (ex. "America/Los_Angeles" for Pacific Time) or 
 
 `node gen-solsteq-json.js`: Generates a JSON file containing solstice and equinox times in UTC for all years from 0 to 2500.
 
+## generate-svg.js
+
+`node generate-svg.js <latitude> <longitude>`: Creates two SVG diagrams:
+
+**day-lengths.svg**: Shows the lengths of day, night, and each stage of twilight for every day of the year. There are also green lines,
+which represent solstices and equinoxes.
+
+**sunrise-sunset.svg**: Shows sunrise, sunset, and twilight times for every day of the year. Green lines represent solstices and 
+equinoxes, the red line is solar noon, and the blue line is solar midnight. In some locations, there are abrupt "jumps" in the graph - 
+this represents daylight saving time, also known as summer time.
+
+The files "ucsb-day-lengths.svg" and "ucsb-sunrise-sunset.svg" show day lengths and sunrise/sunset times for coordinates 34.42, -119.85
+(on the campus of UC Santa Barbara, where I go to college).
+
 ## test.js
 
 Used as a "sandbox" by the developer to test functions defined in the TypeScript files.
