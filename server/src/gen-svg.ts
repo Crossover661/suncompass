@@ -44,8 +44,7 @@ function polygon_from_array(
 /** Generates SVG code for a polyline from an array of points with the specified stroke color, width, and precision (digits after the
  * decimal point in the coordinates). */
 function polyline_from_array(points: number[][], color: string = "#000000", width: number = 1, precision: number = 2): string {
-    const simplified_points = simplify_collinear(points);
-    const ptsAttr = simplified_points.map(([x,y]) => `${x.toFixed(precision)},${y.toFixed(precision)}`).join(" "); // format the "x,y x,y ..." string
+    const ptsAttr = points.map(([x,y]) => `${x.toFixed(precision)},${y.toFixed(precision)}`).join(" "); // format the "x,y x,y ..." string
     return `<polyline points="${ptsAttr}" fill="none" stroke="${color}" stroke-width="${width}"/>\n`;
 }
 

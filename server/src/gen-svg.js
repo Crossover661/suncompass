@@ -30,8 +30,7 @@ function polygon_from_array(points, fill_color = "none", stroke_color = "none", 
 /** Generates SVG code for a polyline from an array of points with the specified stroke color, width, and precision (digits after the
  * decimal point in the coordinates). */
 function polyline_from_array(points, color = "#000000", width = 1, precision = 2) {
-    const simplified_points = simplify_collinear(points);
-    const ptsAttr = simplified_points.map(([x, y]) => `${x.toFixed(precision)},${y.toFixed(precision)}`).join(" "); // format the "x,y x,y ..." string
+    const ptsAttr = points.map(([x, y]) => `${x.toFixed(precision)},${y.toFixed(precision)}`).join(" "); // format the "x,y x,y ..." string
     return `<polyline points="${ptsAttr}" fill="none" stroke="${color}" stroke-width="${width}"/>\n`;
 }
 /** Generates SVG code for a rectangle with the top-left corner at the given x and y cordinates, and the given width, height,
