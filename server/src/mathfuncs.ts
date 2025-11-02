@@ -103,6 +103,25 @@ export function startNextDay(date: DateTime) {
     return date.plus({days: 1}).set({hour: 0, minute: 0, second: 0, millisecond: 0});
 }
 
+/** Signed "twice area" of triangle p0,p1,p2 (zero -> collinear). Helper function for isCollinear */
+function cross(p0: number[], p1: number[], p2: number[]): number {
+    const ax = p1[0] - p0[0], ay = p1[1] - p0[1];
+    const bx = p2[0] - p0[0], by = p2[1] - p0[1];
+    return ax * by - ay * bx;
+}
+
+/** Distance from p1 to the infinite line through p0–p2. Helper function for isCollinear. */
+function pointLineDistance(p0: number[], p1: number[], p2: number[]): number {
+    const area2 = Math.abs(cross(p0, p1, p2));
+    const len = Math.hypot(p2[0] - p0[0], p2[1] - p0[1]);
+    return len === 0 ? Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) : area2 / len;
+}
+
+/** True if p1 is collinear with p0–p2 within epsilon (absolute distance in same units as coords) */
+export function isCollinear(p0: number[], p1: number[], p2: number[], epsilon = 1e-6): boolean {
+    return pointLineDistance(p0, p1, p2) <= epsilon;
+}
+
 /** This function finds the approximate value of delta T, the difference between terrestrial time (recorded by atomic clocks)
 and mean solar time (based on the Earth's rotation). This function's margin of error is 4.8 seconds in 2024, based on the
 value this function returns (73.8 seconds) versus the real value (69 seconds). The margin of error increases for years before

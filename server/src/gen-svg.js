@@ -3,7 +3,7 @@
  * "daylength_svg" generates an SVG file showing (from top to bottom) the lengths of day, civil twilight, nautical twilight, astronomical
  * twilight and night for an entire year
  */
-import { convertToMS } from "./mathfuncs.js";
+import { convertToMS, isCollinear } from "./mathfuncs.js";
 import { intervals_svg, lengths } from "./suncalc.js";
 import { DateTime } from "luxon";
 const svg_close = "</svg>";
@@ -23,13 +23,15 @@ function svg_open(width, height) {
  * @returns SVG string for the given polygon.
  */
 function polygon_from_array(points, fill_color = "none", stroke_color = "none", stroke_width = 0, precision = 2) {
-    const ptsAttr = points.map(([x, y]) => `${x.toFixed(precision)},${y.toFixed(precision)}`).join(" "); // format the "x,y x,y ..." string
+    const simplified_points = simplify_collinear(points);
+    const ptsAttr = simplified_points.map(([x, y]) => `${x.toFixed(precision)},${y.toFixed(precision)}`).join(" "); // format the "x,y x,y ..." string
     return `<polygon points="${ptsAttr}" fill="${fill_color}" stroke="${stroke_color}" stroke-width="${stroke_width}"/>\n`;
 }
 /** Generates SVG code for a polyline from an array of points with the specified stroke color, width, and precision (digits after the
  * decimal point in the coordinates). */
 function polyline_from_array(points, color = "#000000", width = 1, precision = 2) {
-    const ptsAttr = points.map(([x, y]) => `${x.toFixed(precision)},${y.toFixed(precision)}`).join(" "); // format the "x,y x,y ..." string
+    const simplified_points = simplify_collinear(points);
+    const ptsAttr = simplified_points.map(([x, y]) => `${x.toFixed(precision)},${y.toFixed(precision)}`).join(" "); // format the "x,y x,y ..." string
     return `<polyline points="${ptsAttr}" fill="none" stroke="${color}" stroke-width="${width}"/>\n`;
 }
 /** Generates SVG code for a rectangle with the top-left corner at the given x and y cordinates, and the given width, height,
@@ -62,6 +64,25 @@ function month_edges(leap_year = false) {
     else {
         return [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
     }
+}
+/** Simplifies a polygon or polyline (represented as points) to remove collinear points. */
+function simplify_collinear(points) {
+    if (points.length <= 2) {
+        return points;
+    }
+    let new_points = [points[0], points[1]];
+    for (let i = 2; i < points.length; i++) {
+        let prev = new_points[new_points.length - 2];
+        let cur = new_points[new_points.length - 1];
+        let next = points[i];
+        if (isCollinear(prev, cur, next)) {
+            new_points[new_points.length - 1] = next;
+        }
+        else {
+            new_points.push(next);
+        }
+    }
+    return new_points;
 }
 // EPS for key-stability with fractional coords
 const SNAP = 1e-6;
