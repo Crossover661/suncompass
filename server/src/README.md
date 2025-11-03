@@ -20,6 +20,9 @@ December 31, 2025 at 16:15 (4:15 pm) eastern standard time, along with sunrise, 
 `node rise-set.js <latitude> <longitude> <me/js/se/ds>` gives sun position and sunrise/sunset/twilight data for the given latitude and
 longitude at the March equinox (me), June solstice (js), September equinox (se), or December solstice (ds).
 
+Note: to find data for the north or south poles, set the latitude to ±89.9999, not ±90. Solar noon and midnight are undefined at latitude
+±90. 
+
 ## solstice.js
 
 `node solstice.js`: Prints the solstices and equinoxes in the current year (in the local time zone of the device) along with the subsolar
@@ -48,6 +51,9 @@ this represents daylight saving time, also known as summer time.
 
 The files "ucsb-day-lengths.svg" and "ucsb-sunrise-sunset.svg" show day lengths and sunrise/sunset times for coordinates 34.42, -119.85
 (on the campus of UC Santa Barbara, where I go to college).
+
+To create charts for the north pole or south pole, set the coordinates to `89.9999 0` or `-89.9999 0`. Do not set the latitude to 90 or
+-90.
 
 ## test.js
 
