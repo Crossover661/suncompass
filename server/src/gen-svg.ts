@@ -70,7 +70,7 @@ function text_svg(
     alignment_baseline: string,
     precision: number = 2
 ) {
-    return `<text x="${x.toFixed(precision)}" y="${y.toFixed(precision)}" font-family="${font}" font-size="${font_size}"`
+    return `<text x="${x.toFixed(precision)}" y="${y.toFixed(precision)}" font-family="${font}" font-size="${font_size}pt"`
     + ` text-anchor="${text_anchor}" alignment-baseline="${alignment_baseline}" fill="${text_color}">${text}</text>\n`;
 }
 
@@ -267,13 +267,13 @@ export function generate_svg(
     sun_events: SunTime[][],
     type: string,
     solstices_equinoxes: DateTime[] = [],
-    svg_width: number = 1000,
-    svg_height: number = 500,
+    svg_width: number = 1100,
+    svg_height: number = 550,
     left_padding: number = 25,
     right_padding: number = 10,
     top_padding: number = 10,
     bottom_padding: number = 25,
-    text_size: number = 12,
+    text_size: number = 11,
     font: string = "Arial",
     text_color: string = "#000000",
     background_color: string = "#ffffff",

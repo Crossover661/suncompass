@@ -42,7 +42,7 @@ function rectangle_svg(x, y, width, height, fill_color = "none", stroke_color = 
  * Text anchor can be "start" (left-aligned), "middle" (centered), or "end" (right-aligned). Alignment baseline can be either
  * "text-before-edge" (top-aligned), "middle" (centered), or "text-after-edge" (bottom-aligned). */
 function text_svg(text, x, y, font_size, font, text_color, text_anchor, alignment_baseline, precision = 2) {
-    return `<text x="${x.toFixed(precision)}" y="${y.toFixed(precision)}" font-family="${font}" font-size="${font_size}"`
+    return `<text x="${x.toFixed(precision)}" y="${y.toFixed(precision)}" font-family="${font}" font-size="${font_size}pt"`
         + ` text-anchor="${text_anchor}" alignment-baseline="${alignment_baseline}" fill="${text_color}">${text}</text>\n`;
 }
 /** Generates an SVG line from (x1, y1) to (x2, y2) with the given color and width. */
@@ -235,7 +235,7 @@ function intervals_to_polygon(intervals) {
  * The total width of the SVG file is equal to svg_width + left_padding + right_padding. The height is equal to svg_height + top_padding +
  * bottom_padding.
  */
-export function generate_svg(sun_events, type, solstices_equinoxes = [], svg_width = 1000, svg_height = 500, left_padding = 25, right_padding = 10, top_padding = 10, bottom_padding = 25, text_size = 12, font = "Arial", text_color = "#000000", background_color = "#ffffff", language = "en", show_gridlines = true, grid_interval = 2, grid_color = "#808080", gridline_width = 0.5) {
+export function generate_svg(sun_events, type, solstices_equinoxes = [], svg_width = 1100, svg_height = 550, left_padding = 25, right_padding = 10, top_padding = 10, bottom_padding = 25, text_size = 11, font = "Arial", text_color = "#000000", background_color = "#ffffff", language = "en", show_gridlines = true, grid_interval = 2, grid_color = "#808080", gridline_width = 0.5) {
     const days = sun_events.length; // 365 days for common years, 366 for leap years
     /** x-coordinate representing given day */
     function xCoord(dayNumber) { return left_padding + svg_width * (dayNumber / days); }
