@@ -215,32 +215,32 @@ function intervals_to_polygon(intervals) {
  * @param sun_events Values of "allSunEvents" for each day of the year.
  * @param type Set to "length" to generate a day/night/twilight length chart, or "rise-set" to generate a chart with times of day.
  * @param solstices_equinoxes Solstices and equinoxes for the given year, as an array of four DateTimes. They will appear as green lines on the diagram.
- * @param svg_width Width of the chart (not the entire SVG file). Defaults to 1000.
- * @param svg_height Height of the chart (not the entire SVG file). Defaults to 500.
- * @param left_padding Padding to the left of the carpet plot. Defaults to 25 pixels.
- * @param right_padding Padding to the right of the carpet plot. Defaults to 10 pixels.
- * @param top_padding Padding above the carpet plot. Defaults to 10 pixels.
- * @param bottom_padding Padding below the carpet plot. Defaults to 25 pixels.
- * @param text_size The font size to use for the axis labels. Defaults to 12.
+ * @param svg_width Width of the chart (not the entire SVG file) in pixels. Defaults to 1000.
+ * @param svg_height Height of the chart (not the entire SVG file) in pixels. Defaults to 500.
+ * @param left_padding Padding to the left of the carpet plot in pixels. Defaults to 25.
+ * @param right_padding Padding to the right of the carpet plot in pixels. Defaults to 10.
+ * @param top_padding Padding above the carpet plot in pixels. Defaults to 10.
+ * @param bottom_padding Padding below the carpet plot in pixels. Defaults to 25.
+ * @param text_size The font size to use for the axis labels, in points. Defaults to 11.
  * @param font The font family to use for the axis labels. Defaults to Arial.
  * @param text_color Color of text in axis labels. Defaults to #000000 (black).
  * @param background_color The background color of the SVG file. Defaults to #ffffff (white).
  * @param language The language used for month abbreviations, represented as a 2-letter code for example "en" for English, "es" for Spanish
  * or "zh" for Mandarin Chinese. Defaults to "en" (English).
- * @param show_gridlines Whether to show the gridlines overlaid on the carpet plot. Defaults to "true".
- * @param grid_interval Y axis interval. Defaults to 2 (i.e. 2 hours between gridlines)
- * @param grid_color Colors of gridlines. Defaults to #808080 (medium gray).
+ * @param grid_interval Y axis interval. Defaults to 2 (i.e. 2 hours between gridlines).
  * @param gridline_width Width of gridlines. Defaults to 0.5 (pixels).
  * @returns A string for the carpet plot, with gridlines and axis labels, that can be saved into an SVG file.
  * The total width of the SVG file is equal to svg_width + left_padding + right_padding. The height is equal to svg_height + top_padding +
  * bottom_padding.
  */
-export function generate_svg(sun_events, type, solstices_equinoxes = [], svg_width = 1100, svg_height = 550, left_padding = 25, right_padding = 10, top_padding = 10, bottom_padding = 25, text_size = 11, font = "Arial", text_color = "#000000", background_color = "#ffffff", language = "en", show_gridlines = true, grid_interval = 2, grid_color = "#808080", gridline_width = 0.5) {
+export function generate_svg(sun_events, type, solstices_equinoxes = [], svg_width = 1100, svg_height = 550, left_padding = 25, right_padding = 10, top_padding = 10, bottom_padding = 25, text_size = 11, font = "Arial", text_color = "#000000", background_color = "#ffffff", language = "en", grid_interval = 2, gridline_width = 0.5) {
     const days = sun_events.length; // 365 days for common years, 366 for leap years
+    const grid_color = (type == "moon") ? "#000000" : "#808080"; // gridline color
     /** x-coordinate representing given day */
     function xCoord(dayNumber) { return left_padding + svg_width * (dayNumber / days); }
     /** y-coordinate representing day length */
     function yCoord(dayLength) { return top_padding + svg_height * (1 - dayLength / DAY_LENGTH); }
+    /** Converts a set of durations into an array of points representing a polyon. */
     function durations_to_array(durations) {
         let p = [[]]; // p is short for polygons
         for (let i = 0; i < days; i++) {
@@ -361,7 +361,7 @@ export function generate_svg(sun_events, type, solstices_equinoxes = [], svg_wid
         }
         return strings;
     }
-    // generate SVG diagram background
+    // generate SVG opening and background
     let image_width = svg_width + left_padding + right_padding;
     let image_height = svg_height + top_padding + bottom_padding;
     let svg_string = svg_open(image_width, image_height);
@@ -430,23 +430,19 @@ export function generate_svg(sun_events, type, solstices_equinoxes = [], svg_wid
         svg_string += line_svg(x, top_padding, x, top_padding + svg_height, "#00c000", 1);
     }
     // draw y-axis and gridlines
-    let x1 = show_gridlines ? left_padding : left_padding - 5;
-    let x2 = show_gridlines ? left_padding + svg_width : left_padding;
     for (let i = 0; i <= 24; i += grid_interval) {
         let y = yCoord((i / 24) * DAY_LENGTH);
-        svg_string += text_svg(String(i), x1 - 5, y, text_size, font, text_color, "end", "middle");
-        svg_string += line_svg(x1, y, x2, y, grid_color, gridline_width);
+        svg_string += text_svg(String(i), left_padding - 5, y, text_size, font, text_color, "end", "middle");
+        svg_string += line_svg(left_padding, y, left_padding + svg_width, y, grid_color, gridline_width);
     }
     // draw x-axis and gridlines
-    let y1 = show_gridlines ? top_padding : top_padding + svg_height;
-    let y2 = show_gridlines ? top_padding + svg_height : top_padding + svg_height + 5;
     for (let i = 0; i < 12; i++) {
         let x = xCoord(month_edges(days != 365)[i]);
         let xText = (x + xCoord(month_edges(days != 365)[i + 1])) / 2;
         svg_string += text_svg(months(language)[i], xText, top_padding + svg_height + 12, text_size, font, text_color, "middle", "middle");
-        svg_string += line_svg(x, y1, x, y2, grid_color, gridline_width);
+        svg_string += line_svg(x, top_padding, x, top_padding + svg_height, grid_color, gridline_width);
     }
-    svg_string += line_svg(left_padding + svg_width, y1, left_padding + svg_width, y2, grid_color, gridline_width);
+    svg_string += line_svg(left_padding + svg_width, top_padding, left_padding + svg_width, top_padding + svg_height, grid_color, gridline_width);
     // complete SVG diagram
     svg_string += svg_close;
     return svg_string;
