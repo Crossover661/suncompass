@@ -1,8 +1,9 @@
+/** Formulas derived from "Astronomical Algorithms" by Jean Meeus. */
 import { mod, jCentury } from "./mathfuncs.js";
 import { meanSunAnomaly } from "./suncalc.js";
 import { degToRad } from "./constants.js";
 export function moonMeanLongitude(JC) {
-    return 218.3164477 + 481267.88123421 * JC - 0.0015786 * JC ** 2 + JC ** 3 / 538841 - JC ** 4 / 65194000;
+    return 218.3164591 + 481267.88134236 * JC - 0.0013268 * JC ** 2;
 }
 export function moonMeanElongation(JC) {
     return 297.8501921 + 445267.1114034 * JC - 0.0018819 * JC ** 2 + JC ** 3 / 545868 - JC ** 4 / 113065000;
@@ -10,12 +11,12 @@ export function moonMeanElongation(JC) {
 export function moonMeanAnomaly(JC) {
     return 134.9633964 + 477198.8675055 * JC + 0.0087414 * JC ** 2 + JC ** 3 / 69699 - JC ** 4 / 14712000;
 }
+/** Moon argument of latitude */
 export function moonArgLat(JC) {
-    // moon argument of latitude
     return 93.272095 + 483202.0175233 * JC - 0.0036539 * JC ** 2 - JC ** 3 / 3526000 + JC ** 4 / 863310000;
 }
-export const ptld = // moon's periodic terms for longitude and distance
- [
+/** Periodic terms for longitude and distance */
+export const ptld = [
     [0, 0, 1, 0, 6288774, -20905355],
     [2, 0, -1, 0, 1274027, -3699111],
     [2, 0, 0, 0, 658314, -2955968],
@@ -69,7 +70,7 @@ export const ptld = // moon's periodic terms for longitude and distance
     [2, 1, 0, -2, -399, 0],
     [0, 0, 2, -2, -381, -4421],
     [1, 1, 1, 0, 351, 0],
-    [3, 0, -2, 0, -340],
+    [3, 0, -2, 0, -340, 0],
     [4, 0, -3, 0, 330, 0],
     [2, -1, 2, 0, 327, 0],
     [0, 2, 1, 0, -323, 1165],
@@ -77,6 +78,7 @@ export const ptld = // moon's periodic terms for longitude and distance
     [2, 0, 3, 0, 294, 0],
     [2, 0, -1, -2, 0, 8752]
 ];
+/** Periodic terms for latitude */
 export const ptl = [
     [0, 0, 0, 1, 5128122],
     [0, 0, 1, 1, 280602],

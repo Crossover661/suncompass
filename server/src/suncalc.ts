@@ -37,7 +37,7 @@ export function meanSunLongitude(JC: number): number {
     }
     return meanLong;
 }
-export function meanSunAnomaly(JC: number): number {return 357.5291 + 35999.0503*JC - 1.559e-4*JC**2 - 4.8e-7*JC**3;}
+export function meanSunAnomaly(JC: number): number {return 357.5291092 + 35999.0502909*JC - 1.536e-4*JC**2 + JC**3/24490000;}
 export function eccentricity(JC: number): number {return 0.016708617 - 4.2037e-5*JC - 1.236e-7*JC**2;}
 export function equationOfCenter(JC: number): number {
     let anom = meanSunAnomaly(JC) * degToRad;
