@@ -86,13 +86,12 @@ function simplify_collinear(points) {
 // EPS for key-stability with fractional coords
 const SNAP = 1e-6;
 const snap = (v) => Math.round(v / SNAP) * SNAP;
+/** Convert a series of intervals into sets of points representing polygons. */
 function intervals_to_polygon(intervals) {
     const normalizeSpans = (spans) => {
         if (!spans || spans.length === 0)
             return [];
-        const s = spans
-            .map(([a, b]) => [Math.min(a, b), Math.max(a, b)])
-            .sort((u, v) => (u[0] - v[0]) || (u[1] - v[1]));
+        const s = spans.map(([a, b]) => [Math.min(a, b), Math.max(a, b)]).sort((u, v) => (u[0] - v[0]) || (u[1] - v[1]));
         const out = [];
         for (const [a, b] of s) {
             if (out.length === 0 || a > out[out.length - 1][1]) {
@@ -129,9 +128,7 @@ function intervals_to_polygon(intervals) {
     const segKey = (u, v) => {
         const ux = snap(u[0]), uy = snap(u[1]);
         const vx = snap(v[0]), vy = snap(v[1]);
-        return (ux < vx || (ux === vx && uy <= vy))
-            ? `${ux}:${uy}->${vx}:${vy}`
-            : `${vx}:${vy}->${ux}:${uy}`;
+        return (ux < vx || (ux === vx && uy <= vy)) ? `${ux}:${uy}->${vx}:${vy}` : `${vx}:${vy}->${ux}:${uy}`;
     };
     const addAdj = (adj, u, v) => {
         const ku = keyOf(u), kv = keyOf(v);
@@ -161,10 +158,7 @@ function intervals_to_polygon(intervals) {
             vertical.push({ a: [x, a], b: [x, b] });
         }
     }
-    const segs = vertical.concat(horizontal).map(({ a, b }) => ({
-        a: [snap(a[0]), snap(a[1])],
-        b: [snap(b[0]), snap(b[1])]
-    }));
+    const segs = vertical.concat(horizontal).map(({ a, b }) => ({ a: [snap(a[0]), snap(a[1])], b: [snap(b[0]), snap(b[1])] }));
     // ---- stitch into rings ----
     const adj = new Map();
     for (const { a, b } of segs)
@@ -278,7 +272,7 @@ export function generate_svg(sun_events, type, solstices_equinoxes = [], svg_wid
             groups.push([[0, solar_noon]]);
         }
         for (let i = 1; i < days; i++) { // for each day of the year
-            for (let noon of solar_noons[i]) {
+            for (let noon of solar_noons[i]) { // for each solar noon of the day (may be more than 1)
                 let flag = false;
                 for (let group of groups) {
                     if (Math.abs(noon - group[group.length - 1][1]) < DAY_LENGTH / 48 && group[group.length - 1][0] == i - 1) {
@@ -321,7 +315,7 @@ export function generate_svg(sun_events, type, solstices_equinoxes = [], svg_wid
             groups.push([[0, solar_midnight]]);
         }
         for (let i = 1; i < days; i++) { // for each day of the year
-            for (let midnight of solar_midnights[i]) {
+            for (let midnight of solar_midnights[i]) { // for each solar midnight of the day (may be more than 1)
                 let flag = false;
                 for (let group of groups) {
                     if (Math.abs(midnight - group[group.length - 1][1]) < DAY_LENGTH / 48 && group[group.length - 1][0] == i - 1) {

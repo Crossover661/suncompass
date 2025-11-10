@@ -15,6 +15,14 @@ if (args.length != 4 && args.length != 5) {
 }
 
 let [lat, long] = [Number(args[2]), Number(args[3])];
+if (Math.abs(lat) >= 90) {
+    console.log("Latitude must be between -89.9999 and 89.9999");
+    process.exit(1);
+}
+else if (Math.abs(long) > 180) {
+    console.log("Longitude must be between -180 and 180");
+    process.exit(1);
+}
 let time_zone = find(lat, long)[0];
 let year = DateTime.now().setZone(time_zone).year;
 if (args.length == 5) {year = Number(args[4]);}

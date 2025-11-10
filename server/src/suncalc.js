@@ -1,6 +1,6 @@
 /*
 The formulas for eccentricity, earth-sun distance, axial tilt, declination, equation of time, and atmospheric refraction of sunlight
-are borrowed from NOAA's solar calculator https://gml.noaa.gov/grad/solcalc/ and the books "Astronomical Algorithms" by Jean Meeus.
+are borrowed from NOAA's solar calculator https://gml.noaa.gov/grad/solcalc/ and the book "Astronomical Algorithms" by Jean Meeus.
 The refraction formula is modified slightly to ensure continuity to 6 decimal places. The formula for solar ecliptic longitude is
 from the book "Planetary Programs and Tables from -4000 to +2800" by Pierre Bretagnon and Jean-Louis Simon.
 
@@ -21,27 +21,27 @@ import { DateTime } from "luxon";
 import { degToRad, sunPeriodicTerms } from "./constants.js";
 import * as fs from "fs";
 import SunTime from "./SunTime.js";
-const N_UNDEFINED = 2 ** 52;
-const DAY_LENGTH = 86400000;
+const DAY_LENGTH = 86400000; // day length in milliseconds, used for generating intervals and SVG charts
 export function meanSunLongitude(JC) {
     JC += (approxDeltaT(JC) / 3155760000); // division by 3155760000 converts seconds to Julian centuries
     let U = JC / 100;
     let meanLong = 4.9353929 + 62833.196168 * U;
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < sunPeriodicTerms.length; i++) {
         let curRow = sunPeriodicTerms[i];
         meanLong += (1e-7 * (curRow[0] * Math.sin(curRow[2] + curRow[3] * U)));
     }
     return meanLong;
 }
-export function meanSunAnomaly(JC) { return 357.52911 + 35999.05029 * JC - 0.0001537 * JC ** 2; }
-export function eccentricity(JC) { return 0.016708634 - 0.000042037 * JC + 0.0000001267 * JC ** 2; }
+export function meanSunAnomaly(JC) { return 357.5291 + 35999.0503 * JC - 1.559e-4 * JC ** 2 - 4.8e-7 * JC ** 3; }
+export function eccentricity(JC) { return 0.016708617 - 4.2037e-5 * JC - 1.236e-7 * JC ** 2; }
 export function equationOfCenter(JC) {
     let anom = meanSunAnomaly(JC) * degToRad;
-    return (1.914602 - 0.004817 * JC - 0.000014 * JC ** 2) * Math.sin(anom) +
-        (0.019993 - 0.000101 * JC) * Math.sin(2 * anom) +
-        0.000289 * Math.sin(3 * anom);
+    return (1.9146 - 0.004817 * JC - 1.4e-5 * JC ** 2) * Math.sin(anom) +
+        (0.019993 - 1.01e-4 * JC) * Math.sin(2 * anom) +
+        2.9e-4 * Math.sin(3 * anom);
 }
 export function sunAnomaly(JC) { return meanSunAnomaly(JC) + equationOfCenter(JC); }
+/** Distance from sun to earth in kilometers. */
 export function sunDistance(date) {
     if (typeof (date) == "number") {
         let ecc = eccentricity(date);
@@ -577,7 +577,7 @@ export function getSolsticeEquinox(year, month, zone = "utc") {
     }
     else {
         console.log("Month must be 3, 6, 9, or 12");
-        return DateTime.fromMillis(N_UNDEFINED);
+        return DateTime.fromMillis(2 ** 52);
     }
 }
 /**

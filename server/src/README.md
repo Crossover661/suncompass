@@ -49,8 +49,8 @@ which represent solstices and equinoxes.
 equinoxes, the red line is solar noon, and the blue line is solar midnight. In some locations, there are abrupt "jumps" in the graph - 
 this represents daylight saving time, also known as summer time.
 
-The files "ucsb-day-lengths.svg" and "ucsb-sunrise-sunset.svg" show day lengths and sunrise/sunset times for coordinates 34.42, -119.85
-(on the campus of UC Santa Barbara, where I go to college).
+The files "ucsb-day-lengths-2025.svg" and "ucsb-sunrise-sunset-2025.svg" show day lengths and sunrise/sunset times in 2025 for coordinates 
+34.42, -119.85 (on the campus of UC Santa Barbara, where I go to college).
 
 To create charts for the north pole or south pole, set the coordinates to `89.9999 0` or `-89.9999 0`. Do not set the latitude to 90 or
 -90.

@@ -112,28 +112,23 @@ type Seg = { a: number[]; b: number[] };
 const SNAP = 1e-6;
 const snap = (v: number) => Math.round(v / SNAP) * SNAP;
 
+/** Convert a series of intervals into sets of points representing polygons. */
 function intervals_to_polygon(intervals: number[][][]): number[][][] {
     const normalizeSpans = (spans: number[][]): number[][] => {
         if (!spans || spans.length === 0) return [];
-        const s = spans
-            .map(([a, b]) => [Math.min(a, b), Math.max(a, b)] as [number, number])
-            .sort((u, v) => (u[0] - v[0]) || (u[1] - v[1]));
+        const s = spans.map(([a, b]) => [Math.min(a, b), Math.max(a, b)] as [number, number]).sort((u, v) => (u[0]-v[0]) || (u[1]-v[1]));
         const out: number[][] = [];
         for (const [a, b] of s) {
-            if (out.length === 0 || a > out[out.length - 1][1]) {
-                out.push([a, b]);
-            } else {
-                out[out.length - 1][1] = Math.max(out[out.length - 1][1], b);
-            }
+            if (out.length === 0 || a > out[out.length-1][1]) {out.push([a, b]);} 
+            else {out[out.length - 1][1] = Math.max(out[out.length-1][1], b);}
         }
         return out;
     };
-
     // symmetric difference of two disjoint, sorted span lists
     const xorSpans = (A: number[][], B: number[][]): number[][] => {
-        const evts: { y: number; d: number }[] = [];
-        for (const [a, b] of A) { evts.push({ y: a, d: +1 }, { y: b, d: -1 }); }
-        for (const [a, b] of B) { evts.push({ y: a, d: +1 }, { y: b, d: -1 }); }
+        const evts: {y: number; d: number}[] = [];
+        for (const [a, b] of A) {evts.push({ y: a, d: +1 }, { y: b, d: -1 });}
+        for (const [a, b] of B) {evts.push({ y: a, d: +1 }, { y: b, d: -1 });}
         evts.sort((u, v) => (u.y - v.y) || (v.d - u.d)); // starts before ends at same y
         const out: number[][] = [];
         let inside = 0;
@@ -145,17 +140,12 @@ function intervals_to_polygon(intervals: number[][][]): number[][][] {
         }
         return out;
     };
-
     const keyOf = (p: number[]) => `${snap(p[0])}:${snap(p[1])}`;
-
     const segKey = (u: number[], v: number[]) => {
         const ux = snap(u[0]), uy = snap(u[1]);
         const vx = snap(v[0]), vy = snap(v[1]);
-        return (ux < vx || (ux === vx && uy <= vy))
-            ? `${ux}:${uy}->${vx}:${vy}`
-            : `${vx}:${vy}->${ux}:${uy}`;
+        return (ux < vx || (ux === vx && uy <= vy)) ? `${ux}:${uy}->${vx}:${vy}` : `${vx}:${vy}->${ux}:${uy}`;
     };
-
     const addAdj = (adj: Map<string, number[][]>, u: number[], v: number[]) => {
         const ku = keyOf(u), kv = keyOf(v);
         if (!adj.has(ku)) adj.set(ku, []);
@@ -167,7 +157,6 @@ function intervals_to_polygon(intervals: number[][][]): number[][][] {
     // ---- build segments ----
     const W = intervals.length;
     const cols = Array.from({ length: W }, (_, x) => normalizeSpans(intervals[x] || []));
-
     const horizontal: Seg[] = [];
     for (let x = 0; x < W; x++) {
         for (const [a, b] of cols[x]) {
@@ -181,20 +170,13 @@ function intervals_to_polygon(intervals: number[][][]): number[][][] {
         const L = x > 0 ? cols[x - 1] : [];
         const R = x < W ? cols[x] : [];
         const diff = xorSpans(L, R);
-        for (const [a, b] of diff) {
-            vertical.push({ a: [x, a], b: [x, b] });
-        }
+        for (const [a, b] of diff) {vertical.push({ a: [x, a], b: [x, b] });}
     }
-
-    const segs: Seg[] = vertical.concat(horizontal).map(({ a, b }) => ({
-        a: [snap(a[0]), snap(a[1])],
-        b: [snap(b[0]), snap(b[1])]
-    }));
+    const segs: Seg[] = vertical.concat(horizontal).map(({ a, b }) => ({a: [snap(a[0]), snap(a[1])], b: [snap(b[0]), snap(b[1])]}));
 
     // ---- stitch into rings ----
     const adj = new Map<string, number[][]>();
     for (const { a, b } of segs) addAdj(adj, a, b);
-
     const used = new Set<string>();
     const polygons: number[][][] = [];
 
@@ -204,16 +186,13 @@ function intervals_to_polygon(intervals: number[][][]): number[][][] {
 
         // seed walk with the exact edge (a -> b)
         used.add(startEdge);
-
         const polygon: number[][] = [];
         polygon.push([snap(a[0]), snap(a[1])]);
-
         let prev = [snap(a[0]), snap(a[1])];
         let curr = [snap(b[0]), snap(b[1])];
 
         while (true) {
             polygon.push(curr);
-
             const nbrs = adj.get(keyOf(curr)) || [];
             // choose neighbor that's NOT prev, prefer the one whose edge isn't used yet
             let next: number[] | undefined;
@@ -227,13 +206,10 @@ function intervals_to_polygon(intervals: number[][][]): number[][][] {
             used.add(segKey(curr, next));
             prev = curr;
             curr = next;
-
             if (curr[0] === polygon[0][0] && curr[1] === polygon[0][1]) break; // closed
         }
-
         if (polygon.length >= 4) {polygons.push(polygon);}
     }
-
     return polygons;
 }
 
@@ -321,11 +297,9 @@ export function generate_svg(
         }
         
         let groups: number[][][] = []; // a group of multiple lines (number[][]), each representing a cluster of solar noons
-        for (let solar_noon of solar_noons[0]) {
-            groups.push([[0, solar_noon]]);
-        }
+        for (let solar_noon of solar_noons[0]) {groups.push([[0, solar_noon]]);}
         for (let i=1; i<days; i++) { // for each day of the year
-            for (let noon of solar_noons[i]) {
+            for (let noon of solar_noons[i]) { // for each solar noon of the day (may be more than 1)
                 let flag: boolean = false;
                 for (let group of groups) {
                     if (Math.abs(noon - group[group.length-1][1]) < DAY_LENGTH/48 && group[group.length-1][0] == i-1) {
@@ -364,7 +338,7 @@ export function generate_svg(
             groups.push([[0, solar_midnight]]);
         }
         for (let i=1; i<days; i++) { // for each day of the year
-            for (let midnight of solar_midnights[i]) {
+            for (let midnight of solar_midnights[i]) { // for each solar midnight of the day (may be more than 1)
                 let flag: boolean = false;
                 for (let group of groups) {
                     if (Math.abs(midnight - group[group.length-1][1]) < DAY_LENGTH/48 && group[group.length-1][0] == i-1) {
