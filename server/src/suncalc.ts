@@ -103,11 +103,11 @@ export function declination(date: number | DateTime): number {
 export function equationOfTime(date: number | DateTime): number { 
     if (typeof(date) == "number") {
         let vary = Math.tan(axialTilt(date)*degToRad/2) ** 2;
-        let long = mod(280.46646 + 36000.76983*date + 0.0003032*date**2, 360);
-        let anom = meanSunAnomaly(date);
+        let long = mod(280.46646 + 36000.76983*date + 0.0003032*date**2, 360) * degToRad;
+        let anom = meanSunAnomaly(date) * degToRad;
         let ecc = eccentricity(date);
 
-        return 4*(vary*Math.sin(2*long*degToRad)-2*ecc*Math.sin(anom*degToRad)+4*ecc*vary*Math.sin(anom*degToRad)*Math.cos(2*long*degToRad)-0.5*(vary**2)*Math.sin(4*long*degToRad)-1.25*(ecc**2)*Math.sin(2*anom*degToRad))/degToRad;
+        return 4*(vary*Math.sin(2*long)-2*ecc*Math.sin(anom)+4*ecc*vary*Math.sin(anom)*Math.cos(2*long)-0.5*(vary**2)*Math.sin(4*long)-1.25*(ecc**2)*Math.sin(2*anom))/degToRad;
     }
     else {return equationOfTime(jCentury(date));}
 }
