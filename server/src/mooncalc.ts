@@ -91,14 +91,18 @@ function a(JC: number) {
 
 /** Variations in longitude due to the actions of Venus, Jupiter, and the flattening of Earth. */
 function deltaL(JC: number) {
-    let A = a(JC);
-    return 3958*Math.sin(A[0]*degToRad) + 1962*Math.sin((moonMeanLongitude(JC)-moonArgLat(JC))*degToRad) + 318*Math.sin(A[1]*degToRad);
+    let [a1, a2, a3] = a(JC);
+    return 3958*Math.sin(a1*degToRad) + 1962*Math.sin((moonMeanLongitude(JC)-moonArgLat(JC))*degToRad) + 318*Math.sin(a2*degToRad);
 }
 
 /** Variations in latitude due to the actions of Venus, Jupiter, and the flattening of Earth. */
 function deltaB(JC: number) {
-    let A = a(JC);
-    return -2235*Math.sin(moonMeanLongitude(JC)*degToRad) + 382*Math.sin(A[2]*degToRad) + 175*Math.sin((A[0]-moonArgLat(JC))*degToRad) + 175*Math.sin((A[0]+moonArgLat(JC))*degToRad) + 127*Math.sin((moonMeanLongitude(JC)-moonMeanAnomaly(JC))*degToRad) - 115*Math.sin((moonMeanLongitude(JC)+moonMeanAnomaly(JC))*degToRad);
+    let [a1, a2, a3] = a(JC);
+    let meanLong = moonMeanLongitude(JC);
+    let meanAnomaly = moonMeanAnomaly(JC);
+    let argLat = moonArgLat(JC);
+    return -2235*Math.sin(meanLong*degToRad) + 382*Math.sin(a3*degToRad) + 175*Math.sin((a1-argLat)*degToRad) +
+    175*Math.sin((a1+argLat)*degToRad) + 127*Math.sin((meanLong-meanAnomaly)*degToRad) - 115*Math.sin((meanLong+meanAnomaly)*degToRad);
 }
 
 /** The nutation for the moon's longitude, derived from page 132 of Astronomical Algorithms. */
