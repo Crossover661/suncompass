@@ -77,9 +77,9 @@ export function sunLongitude(date) {
 export function axialTilt(date) {
     if (typeof (date) == "number") {
         let mean_obliquity = 23.4392911 + (-46.815 * date - 5.9e-4 * date ** 2 + 1.813e-3 * date ** 3) / 3600;
-        let L = (280.4665 + 36000.7698 * date) * degToRad;
-        let Lprime = (218.3165 + 481267.8813 * date) * degToRad;
-        let omega = (125.04452 - 1934.136261 * date + 0.0020708 * date ** 2 + date ** 3 / 450000) * degToRad;
+        let L = mod((280.4665 + 36000.7698 * date), 360) * degToRad;
+        let Lprime = mod((218.3165 + 481267.8813 * date), 360) * degToRad;
+        let omega = mod((125.04452 - 1934.136261 * date + 0.0020708 * date ** 2 + date ** 3 / 450000), 360) * degToRad;
         let nutation = (9.2 * Math.cos(omega) + 0.57 * Math.cos(2 * L) + 0.1 * Math.cos(2 * Lprime) - 0.09 * Math.cos(2 * omega)) / 3600;
         return mean_obliquity + nutation;
     }

@@ -85,9 +85,9 @@ function deltaB(JC) {
 }
 /** The nutation for the moon's longitude, derived from page 132 of Astronomical Algorithms. */
 function nutation(JC) {
-    let L = (280.4665 + 36000.7698 * JC) * degToRad;
-    let Lprime = (218.3165 + 481267.8813 * JC) * degToRad;
-    let omega = (125.04452 - 1934.136261 * JC + 0.0020708 * JC ** 2 + JC ** 3 / 450000) * degToRad;
+    let L = mod((280.4665 + 36000.7698 * JC), 360) * degToRad;
+    let Lprime = mod((218.3165 + 481267.8813 * JC), 360) * degToRad;
+    let omega = mod((125.04452 - 1934.136261 * JC + 0.0020708 * JC ** 2 + JC ** 3 / 450000), 360) * degToRad;
     return (-17.2 * Math.sin(omega) - 1.32 * Math.sin(2 * L) - 0.23 * Math.sin(2 * Lprime) + 0.21 * Math.sin(2 * omega)) / 3600;
 }
 /** Returns the ecliptic latitude and longitude of the moon. Return value is an array: [latitude, longitude],
