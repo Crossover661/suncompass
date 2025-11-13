@@ -25,9 +25,13 @@ export function moonArgLat(JC: number) {
 /** Sum of all longitude terms in moon_ptld (periodic terms for longitude and distance) */
 function l(JC: number) {
     let l = 0;
+    let D = moonMeanElongation(JC);
+    let M = meanSunAnomaly(JC);
+    let Mp = moonMeanAnomaly(JC);
+    let F = moonArgLat(JC);
     for (let i=0; i<moon_ptld.length; i++) {
         let curRow = moon_ptld[i];
-        let curSum = curRow[4] * Math.sin((curRow[0]*moonMeanElongation(JC) + curRow[1]*meanSunAnomaly(JC) + curRow[2]*moonMeanAnomaly(JC) + curRow[3]*moonArgLat(JC))*degToRad);
+        let curSum = curRow[4] * Math.sin((curRow[0]*D + curRow[1]*M + curRow[2]*Mp + curRow[3]*F)*degToRad);
         if (curRow[1] != 0) {
             // Multiply terms which contain -M or M by E, and terms which contain 2M or -2M by E^2.
             let E = 1 - 0.002516*JC - 7.4e-6*JC**2;
@@ -41,9 +45,13 @@ function l(JC: number) {
 /** Sum of all distance terms in moon_ptld (periodic terms for longitude and distance) */
 function r(JC: number) {
     let r = 0;
+    let D = moonMeanElongation(JC);
+    let M = meanSunAnomaly(JC);
+    let Mp = moonMeanAnomaly(JC);
+    let F = moonArgLat(JC);
     for (let i=0; i<moon_ptld.length; i++) {
         let curRow = moon_ptld[i];
-        let curSum = curRow[5] * Math.sin((curRow[0]*moonMeanElongation(JC) + curRow[1]*meanSunAnomaly(JC) + curRow[2]*moonMeanAnomaly(JC) + curRow[3]*moonArgLat(JC))*degToRad);
+        let curSum = curRow[5] * Math.cos((curRow[0]*D + curRow[1]*M + curRow[2]*Mp + curRow[3]*F)*degToRad);
         if (curRow[1] != 0) {
             // Multiply terms which contain -M or M by E, and terms which contain 2M or -2M by E^2.
             let E = 1 - 0.002516*JC - 7.4e-6*JC**2;
@@ -57,9 +65,13 @@ function r(JC: number) {
 /** Sum of all latitude terms in moon_ptl (periodic terms for latitude) */
 function b(JC: number) {
     let b = 0;
+    let D = moonMeanElongation(JC);
+    let M = meanSunAnomaly(JC);
+    let Mp = moonMeanAnomaly(JC);
+    let F = moonArgLat(JC);
     for (let i=0; i<moon_ptl.length; i++) {
         let curRow = moon_ptl[i];
-        let curSum = curRow[4] * Math.sin((curRow[0]*moonMeanElongation(JC) + curRow[1]*meanSunAnomaly(JC) + curRow[2]*moonMeanAnomaly(JC) + curRow[3]*moonArgLat(JC))*degToRad);
+        let curSum = curRow[4] * Math.sin((curRow[0]*D + curRow[1]*M + curRow[2]*Mp + curRow[3]*F)*degToRad);
         if (curRow[1] != 0) {
             // Multiply terms which contain -M or M by E, and terms which contain 2M or -2M by E^2.
             let E = 1 - 0.002516*JC - 7.4e-6*JC**2;
