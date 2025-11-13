@@ -16,7 +16,7 @@ if (args.length != 4 && args.length != 5) {
 
 let [lat, long] = [Number(args[2]), Number(args[3])];
 if (Math.abs(lat) >= 90) {
-    console.log("Latitude must be between -89.9999 and 89.9999");
+    console.log("Latitude must be between -90 and 90, exclusive (use ±89.9999 for poles)");
     process.exit(1);
 }
 else if (Math.abs(long) > 180) {

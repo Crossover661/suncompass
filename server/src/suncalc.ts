@@ -21,7 +21,7 @@ import {clamp, mod, mins, jCentury, approxDeltaT, startOfDay, startNextDay, conv
 import {DateTime} from "luxon";
 import {degToRad, sunPeriodicTerms} from "./constants.js";
 import * as fs from "fs";
-import { nodeModuleNameResolver, NumericLiteral } from "../../node_modules/typescript/lib/typescript.js";
+import { couldStartTrivia, nodeModuleNameResolver, NumericLiteral } from "../../node_modules/typescript/lib/typescript.js";
 import { time } from "console";
 import SunTime from "./SunTime.js"
 
@@ -37,6 +37,8 @@ export function meanSunLongitude(JC: number): number {
     }
     return meanLong;
 }
+
+/** Formula 45.3, in page 308 of Astronomical Algorithms */
 export function meanSunAnomaly(JC: number): number {return 357.5291092 + 35999.0502909*JC - 1.536e-4*JC**2 + JC**3/24490000;}
 export function eccentricity(JC: number): number {return 0.016708617 - 4.2037e-5*JC - 1.236e-7*JC**2;}
 export function equationOfCenter(JC: number): number {
@@ -53,10 +55,7 @@ export function sunDistance(date: number | DateTime): number {
         let ecc = eccentricity(date);
         return (149598023*(1-ecc**2))/(1+ecc*Math.cos(sunAnomaly(date)*degToRad));
     }
-    else {
-        let JC = jCentury(date);
-        return sunDistance(JC);
-    }
+    else {return sunDistance(jCentury(date));}
 }
 
 /**
@@ -73,9 +72,7 @@ export function sunLongitude(date: number | DateTime): number {
         let nutation = 1e-7*(-834*Math.sin(2.18-3375.7*U+0.36*U**2)-64*Math.sin(3.51+125666.39*U+0.1*U**2));
         return mod((meanLong + aberration + nutation)/degToRad, 360);
     }
-    else {
-        return sunLongitude(jCentury(date));
-    }
+    else {return sunLongitude(jCentury(date));}
 }
 
 /**
@@ -83,7 +80,14 @@ export function sunLongitude(date: number | DateTime): number {
  * @param date A Luxon DateTime object, or a number representing the Julian century.
  */
 export function axialTilt(date: number | DateTime): number {
-    if (typeof(date) == "number") {return 23.4392911 - (46.815*date-0.00059*date**2+0.001813*date**3)/3600 + 0.00256*Math.cos((125.04-1934.136*date)*degToRad);}
+    if (typeof(date) == "number") {
+        let mean_obliquity = 23.4392911 + (-46.815*date - 5.9e-4*date**2 + 1.813e-3*date**3) / 3600;
+        let L = (280.4665 + 36000.7698*date)*degToRad;
+        let Lprime = (218.3165 + 481267.8813*date)*degToRad;
+        let omega = (125.04452 - 1934.136261*date + 0.0020708*date**2 + date**3/450000)*degToRad;
+        let nutation = (9.2*Math.cos(omega) + 0.57*Math.cos(2*L) + 0.1*Math.cos(2*Lprime) - 0.09*Math.cos(2*omega)) / 3600;
+        return mean_obliquity + nutation;
+    }
     else {return axialTilt(jCentury(date));}
 }
 
@@ -128,14 +132,6 @@ export function sunAngularRadius(date: DateTime): number {
 export function solarTime(longitude: number, date: DateTime): number {
     let timeEq = equationOfTime(date);
     return mod(mins(date) + timeEq + 4*longitude - date.offset, 1440);
-}
-
-/**
- * Difference between mean solar time at a given longitude and UTC, in minutes.
- * @param longitude Longitude in degrees.
- */
-export function meanSolarTimeOffset(longitude: number): number {
-    return Math.floor(4*longitude+0.5);
 }
 
 /**
@@ -249,16 +245,10 @@ export function sunPosition(lat: number, long: number, date: DateTime): number[]
  * @param elev Solar elevation angle before refraction.
  */
 export function refraction(elev: number): number {
-    // This formula is borrowed from NOAA's solar calculator but modified slightly to be continuous.
-    if (Math.abs(elev) >= 89.999) {return 0;}
-    else {
-        let ref; // refraction angle in arcseconds
-        let tanElev = Math.tan(elev*degToRad);
-        if (elev >= 5) {ref = (58.1/tanElev - 0.07/tanElev**3 + 0.000086/tanElev**5);}
-        else if (elev >= -0.575) {ref = 1.0029734*(1735 - 518.2*elev + 103.4*elev**2 - 12.79*elev**3 + 0.711*elev**4);}
-        else {ref = -20.83284/tanElev;}
-        return ref/3600; // convert arcseconds to degrees
-    }
+    /** Formula for elevations greater than -5/6 is from Astronomical Algorithms by Jean Meeus (formula 15.4, page 102). 
+     * For elevations below this, it is smoothed to 0 with a function proportional to the cotangent. */ 
+    if (elev <= -5/6) {return -0.0089931/Math.tan(elev*degToRad);}
+    else {return (1.02 / Math.tan((elev+10.3/(elev+5.11))*degToRad) + 0.001927) / 60;}
 }
 
 /**

@@ -80,7 +80,7 @@ function printEverySecond(lat, long, zone, lines = 0) {
     setTimeout(printEverySecond(lat, long, zone, l), 1000 - date.millisecond); // delay until next full second
 }
 
-if (Math.abs(lat) >= 90) {console.log("Latitude must be between -89.9999 and 89.9999");}
+if (Math.abs(lat) >= 90) {console.log("Latitude must be between -90 and 90, exclusive (use ±89.9999 for poles)");}
 else if (Math.abs(long) > 180) {console.log("Longitude must be between -180 and 180");}
 else if (date == null) {printEverySecond(lat, long, zone);}
 else {printSunInfo(lat, long, zone, date);}
