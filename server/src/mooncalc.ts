@@ -29,14 +29,11 @@ function l(JC: number) {
     let M = meanSunAnomaly(JC);
     let Mp = moonMeanAnomaly(JC);
     let F = moonArgLat(JC);
+    let E = 1 - 0.002516*JC - 7.4e-6*JC**2;
     for (let i=0; i<moon_ptld.length; i++) {
         let curRow = moon_ptld[i];
         let curSum = curRow[4] * Math.sin((curRow[0]*D + curRow[1]*M + curRow[2]*Mp + curRow[3]*F)*degToRad);
-        if (curRow[1] != 0) {
-            // Multiply terms which contain -M or M by E, and terms which contain 2M or -2M by E^2.
-            let E = 1 - 0.002516*JC - 7.4e-6*JC**2;
-            curSum *= (E ** Math.abs(curRow[1]));
-        }
+        curSum *= (E ** Math.abs(curRow[1])); // Multiply terms which contain -M or M by E, and terms which contain 2M or -2M by E^2.
         l += curSum;
     }
     return l;
@@ -49,14 +46,11 @@ function r(JC: number) {
     let M = meanSunAnomaly(JC);
     let Mp = moonMeanAnomaly(JC);
     let F = moonArgLat(JC);
+    let E = 1 - 0.002516*JC - 7.4e-6*JC**2;
     for (let i=0; i<moon_ptld.length; i++) {
         let curRow = moon_ptld[i];
         let curSum = curRow[5] * Math.cos((curRow[0]*D + curRow[1]*M + curRow[2]*Mp + curRow[3]*F)*degToRad);
-        if (curRow[1] != 0) {
-            // Multiply terms which contain -M or M by E, and terms which contain 2M or -2M by E^2.
-            let E = 1 - 0.002516*JC - 7.4e-6*JC**2;
-            curSum *= (E ** Math.abs(curRow[1]));
-        }
+        curSum *= (E ** Math.abs(curRow[1])); // Multiply terms which contain -M or M by E, and terms which contain 2M or -2M by E^2.
         r += curSum;
     }
     return r;
@@ -69,14 +63,11 @@ function b(JC: number) {
     let M = meanSunAnomaly(JC);
     let Mp = moonMeanAnomaly(JC);
     let F = moonArgLat(JC);
+    let E = 1 - 0.002516*JC - 7.4e-6*JC**2;
     for (let i=0; i<moon_ptl.length; i++) {
         let curRow = moon_ptl[i];
         let curSum = curRow[4] * Math.sin((curRow[0]*D + curRow[1]*M + curRow[2]*Mp + curRow[3]*F)*degToRad);
-        if (curRow[1] != 0) {
-            // Multiply terms which contain -M or M by E, and terms which contain 2M or -2M by E^2.
-            let E = 1 - 0.002516*JC - 7.4e-6*JC**2;
-            curSum *= (E ** Math.abs(curRow[1]));
-        }
+        curSum *= (E ** Math.abs(curRow[1])); // Multiply terms which contain -M or M by E, and terms which contain 2M or -2M by E^2.
         b += curSum;
     }
     return b;
