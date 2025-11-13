@@ -1,8 +1,8 @@
 /* 
 The formulas for eccentricity, earth-sun distance, axial tilt, declination, equation of time, and atmospheric refraction of sunlight 
-are borrowed from NOAA's solar calculator https://gml.noaa.gov/grad/solcalc/ and the book "Astronomical Algorithms" by Jean Meeus. 
-The refraction formula is modified slightly to ensure continuity to 6 decimal places. The formula for solar ecliptic longitude is
-from the book "Planetary Programs and Tables from -4000 to +2800" by Pierre Bretagnon and Jean-Louis Simon.
+are borrowed from the book "Astronomical Algorithms" by Jean Meeus. The refraction formula is modified slightly to ensure continuity 
+when the sun is below the horizon. The formula for solar ecliptic longitude is from the book "Planetary Programs and Tables from 
+-4000 to +2800" by Pierre Bretagnon and Jean-Louis Simon.
 
 The subsolar point is calculated using the declination and equation of time, treating UTC as equivalent to UT1 (mean solar time at 0
 degrees longitude), the two are always within 0.9 seconds of each other. Solar noon and midnight are calculated using the equation of 
@@ -35,11 +35,11 @@ export function meanSunLongitude(JC: number): number {
         let curRow = sunPeriodicTerms[i];
         meanLong += (1e-7*(curRow[0] * Math.sin(curRow[2]+curRow[3]*U)));
     }
-    return meanLong;
+    return mod(meanLong, 360);
 }
 
 /** Formula 45.3, in page 308 of Astronomical Algorithms */
-export function meanSunAnomaly(JC: number): number {return 357.5291092 + 35999.0502909*JC - 1.536e-4*JC**2 + JC**3/24490000;}
+export function meanSunAnomaly(JC: number): number {return mod(357.5291092 + 35999.0502909*JC - 1.536e-4*JC**2 + JC**3/24490000, 360);}
 export function eccentricity(JC: number): number {return 0.016708617 - 4.2037e-5*JC - 1.236e-7*JC**2;}
 export function equationOfCenter(JC: number): number {
     let anom = meanSunAnomaly(JC) * degToRad;

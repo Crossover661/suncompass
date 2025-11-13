@@ -6,20 +6,20 @@ import {DateTime} from "luxon";
 import {degToRad, moon_ptl, moon_ptld} from "./constants.js";
 
 export function moonMeanLongitude(JC: number) {
-    return 218.3164591 + 481267.88134236*JC - 0.0013268*JC**2 + JC**3/538841 - JC**4/65194000;
+    return mod(218.3164591 + 481267.88134236*JC - 0.0013268*JC**2 + JC**3/538841 - JC**4/65194000, 360);
 }
 
 export function moonMeanElongation(JC: number) {
-    return 297.8502042 + 445267.1115168*JC - 0.00163*JC**2 + JC**3/545868 - JC**4/113065000;
+    return mod(297.8502042 + 445267.1115168*JC - 0.00163*JC**2 + JC**3/545868 - JC**4/113065000, 360);
 }
 
 export function moonMeanAnomaly(JC: number) {
-    return 134.9634114 + 477198.8676313*JC + 0.008997*JC**2 + JC**3/69699 - JC**4/14712000;
+    return mod(134.9634114 + 477198.8676313*JC + 0.008997*JC**2 + JC**3/69699 - JC**4/14712000, 360);
 }
 
 /** Moon argument of latitude */
 export function moonArgLat(JC: number) {
-    return 93.2720993 + 483202.0175273*JC - 0.0034029*JC**2 - JC**3/3526000 + JC**4/863310000;
+    return mod(93.2720993 + 483202.0175273*JC - 0.0034029*JC**2 - JC**3/3526000 + JC**4/863310000, 360);
 }
 
 /** Sum of all longitude terms in moon_ptld (periodic terms for longitude and distance) */
