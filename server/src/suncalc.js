@@ -133,7 +133,7 @@ export function solarTime(longitude, date) {
     return mod(mins(date) + timeEq + 4 * longitude - date.offset, 1440);
 }
 /**
- * Returns the time(s) of solar noon as a DateTime object.
+ * Returns the time(s) of solar noon, along with the sun's position at solar noon.
  * @param longitude Longitude in degrees.
  * @param date SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for solar noon.
  * @returns
@@ -148,25 +148,37 @@ export function solarNoon(lat, long, date) {
     let solarTimeRate = stDiff / dayLength; // the rate at which solar time changes through the day, relative to actual time
     if (st00 > 600 && st00 <= 720 && st24 > 720 && st24 < 840) { // 2 solar noons in a day
         let solarNoon0 = beginningOfDay.plus({ minutes: (720 - st00) / solarTimeRate });
+        solarNoon0 = solarNoon0.plus((720 - solarTime(long, solarNoon0)) * 60000); // refine to 1 ms precision
+        if (solarNoon0 < beginningOfDay) {
+            solarNoon0 = beginningOfDay;
+        }
+        let [e0, a0] = sunPosition(lat, long, solarNoon0); // solar elevation/azimuth at solarNoon0
         let solarNoon1 = endOfDay.minus({ minutes: (st24 - 720) / solarTimeRate });
-        let sunPos0 = sunPosition(lat, long, solarNoon0); // solar elevation/azimuth at solarNoon0
-        let sunPos1 = sunPosition(lat, long, solarNoon1); // solar elevation/azimuth at solarNoon1
-        return [
-            new SunTime(solarNoon0, sunPos0[0], sunPos0[1], "Solar Noon"),
-            new SunTime(solarNoon1, sunPos1[0], sunPos1[1], "Solar Noon")
-        ];
+        solarNoon1 = solarNoon1.plus((720 - solarTime(long, solarNoon1)) * 60000);
+        if (solarNoon1 >= endOfDay) {
+            solarNoon1 = endOfDay.minus(1);
+        }
+        let [e1, a1] = sunPosition(lat, long, solarNoon1); // solar elevation/azimuth at solarNoon1
+        return [new SunTime(solarNoon0, e0, a0, "Solar Noon"), new SunTime(solarNoon1, e1, a1, "Solar Noon")];
     }
     else if (st00 > 720 && st00 < 840 && st24 > 600 && st24 <= 720) { // 0 solar noons in a day
         return [];
     }
     else { // 1 solar noon in a day
         let solarNoon = beginningOfDay.plus({ minutes: mod(720 - st00, 1440) / solarTimeRate });
-        let sunPos = sunPosition(lat, long, solarNoon);
-        return [new SunTime(solarNoon, sunPos[0], sunPos[1], "Solar Noon")];
+        solarNoon = solarNoon.plus((720 - solarTime(long, solarNoon)) * 60000);
+        if (solarNoon < beginningOfDay) {
+            solarNoon = beginningOfDay;
+        }
+        else if (solarNoon >= endOfDay) {
+            solarNoon = endOfDay.minus(1);
+        }
+        let [e, a] = sunPosition(lat, long, solarNoon);
+        return [new SunTime(solarNoon, e, a, "Solar Noon")];
     }
 }
 /**
- * Returns the time(s) of solar midnight as a DateTime object.
+ * Returns the time(s) of solar midnight, along with the sun's position at solar midnight.
  * @param longitude Longitude in degrees.
  * @param date SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for solar midnight.
  * @returns
@@ -181,21 +193,33 @@ export function solarMidnight(lat, long, date) {
     let solarTimeRate = stDiff / dayLength; // the rate at which solar time changes through the day, relative to actual time
     if (st00 > 1320 && st24 < 120) { // 2 solar midnights in a day
         let solarMidnight0 = beginningOfDay.plus({ minutes: (1440 - st00) / solarTimeRate });
+        solarMidnight0 = solarMidnight0.plus((720 - mod(solarTime(long, solarMidnight0) + 720, 1440)) * 60000);
+        if (solarMidnight0 < beginningOfDay) {
+            solarMidnight0 = beginningOfDay;
+        }
+        let [e0, a0] = sunPosition(lat, long, solarMidnight0); // solar elevation/azimuth at solarMidnight0
         let solarMidnight1 = endOfDay.minus({ minutes: st24 / solarTimeRate });
-        let sunPos0 = sunPosition(lat, long, solarMidnight0); // solar elevation/azimuth at solarMidnight0
-        let sunPos1 = sunPosition(lat, long, solarMidnight1); // solar elevation/azimuth at solarMidnight1
-        return [
-            new SunTime(solarMidnight0, sunPos0[0], sunPos0[1], "Solar Midnight"),
-            new SunTime(solarMidnight1, sunPos1[0], sunPos1[1], "Solar Midnight")
-        ];
+        solarMidnight1 = solarMidnight1.plus((720 - mod(solarTime(long, solarMidnight1) + 720, 1440)) * 60000);
+        if (solarMidnight1 >= endOfDay) {
+            solarMidnight1 = endOfDay.minus(1);
+        }
+        let [e1, a1] = sunPosition(lat, long, solarMidnight1); // solar elevation/azimuth at solarMidnight1
+        return [new SunTime(solarMidnight0, e0, a0, "Solar Midnight"), new SunTime(solarMidnight1, e1, a1, "Solar Midnight")];
     }
     else if (st00 < 120 && st24 > 1320) { // 0 solar midnights in a day
         return [];
     }
     else { // 1 solar midnight in a day
         let solarMidnight = endOfDay.minus({ minutes: st24 / solarTimeRate });
-        let sunPos = sunPosition(lat, long, solarMidnight);
-        return [new SunTime(solarMidnight, sunPos[0], sunPos[1], "Solar Midnight")];
+        solarMidnight = solarMidnight.plus((720 - mod(solarTime(long, solarMidnight) + 720, 1440)) * 60000);
+        if (solarMidnight < beginningOfDay) {
+            solarMidnight = beginningOfDay;
+        }
+        else if (solarMidnight >= endOfDay) {
+            solarMidnight = endOfDay.minus(1);
+        }
+        let [e, a] = sunPosition(lat, long, solarMidnight);
+        return [new SunTime(solarMidnight, e, a, "Solar Midnight")];
     }
 }
 /**
@@ -327,7 +351,7 @@ export function dawn(lat, long, date, angle, type) {
         let t0 = maxAndMinTimes[i], t1 = maxAndMinTimes[i + 1];
         let s0 = sunPosition(lat, long, t0), s1 = sunPosition(lat, long, t1);
         if (s0[0] <= angle && s1[0] >= angle) {
-            while (t1.diff(t0).as("milliseconds") > 1) {
+            while (t1.toMillis() - t0.toMillis() > 1) {
                 let avg = DateTime.fromMillis((t0.toMillis() + t1.toMillis()) / 2, { zone: date.zone });
                 if (sunPosition(lat, long, avg)[0] < angle) {
                     t0 = avg;
@@ -359,7 +383,7 @@ export function dusk(lat, long, date, angle, type) {
         let t0 = maxAndMinTimes[i], t1 = maxAndMinTimes[i + 1];
         let s0 = sunPosition(lat, long, t0)[0], s1 = sunPosition(lat, long, t1)[0];
         if (s0 >= angle && s1 <= angle) {
-            while (t1.diff(t0).as("milliseconds") > 1) {
+            while (t1.toMillis() - t0.toMillis() > 1) {
                 let avg = DateTime.fromMillis((t0.toMillis() + t1.toMillis()) / 2, { zone: date.zone });
                 if (sunPosition(lat, long, avg)[0] < angle) {
                     t1 = avg;
