@@ -76,12 +76,12 @@ export function sunLongitude(date) {
  */
 export function axialTilt(date) {
     if (typeof (date) == "number") {
-        let mean_obliquity = 23.4392911 + (-46.815 * date - 5.9e-4 * date ** 2 + 1.813e-3 * date ** 3) / 3600;
+        let meanObliquity = 23.4392911 + (-46.815 * date - 5.9e-4 * date ** 2 + 1.813e-3 * date ** 3) / 3600;
         let L = mod((280.4665 + 36000.7698 * date), 360) * degToRad;
         let Lprime = mod((218.3165 + 481267.8813 * date), 360) * degToRad;
         let omega = mod((125.04452 - 1934.136261 * date + 0.0020708 * date ** 2 + date ** 3 / 450000), 360) * degToRad;
         let nutation = (9.2 * Math.cos(omega) + 0.57 * Math.cos(2 * L) + 0.1 * Math.cos(2 * Lprime) - 0.09 * Math.cos(2 * omega)) / 3600;
-        return mean_obliquity + nutation;
+        return meanObliquity + nutation;
     }
     else {
         return axialTilt(jCentury(date));
@@ -432,13 +432,13 @@ export function dayLength(lat, long, date) {
         return set[1].time.diff(rise[0].time).as("seconds");
     }
     // If sunset after midnight or sunrise before midnight
-    let rise_y = sunrise(lat, long, date.minus({ days: 1 })); // sunrise yesterday
-    let set_t = sunset(lat, long, date.plus({ days: 1 })); // sunset tomorrow
-    if (set_t.length >= 1 && rise.length >= 1 && rise[0].time.hour <= 11) {
-        return set_t[0].time.diff(rise[0].time).as("seconds");
+    let riseY = sunrise(lat, long, date.minus({ days: 1 })); // sunrise yesterday
+    let setT = sunset(lat, long, date.plus({ days: 1 })); // sunset tomorrow
+    if (setT.length >= 1 && rise.length >= 1 && rise[0].time.hour <= 11) {
+        return setT[0].time.diff(rise[0].time).as("seconds");
     }
-    else if (rise_y.length >= 1 && set.length >= 1 && set[0].time.hour >= 12) {
-        return set[0].time.diff(rise_y[rise_y.length - 1].time).as("seconds");
+    else if (riseY.length >= 1 && set.length >= 1 && set[0].time.hour >= 12) {
+        return set[0].time.diff(riseY[riseY.length - 1].time).as("seconds");
     }
     // If undefined (ex. sunrise but no sunset, or vice versa)
     return -1;
@@ -695,7 +695,7 @@ export function intervals(sunEvents) {
  *
  * aIntervals: Intervals of astronomical twilight or brighter (sun angle >= -18°).
  */
-export function intervals_svg(sunEvents) {
+export function intervalsSvg(sunEvents) {
     let newSunEvents = []; // sunEvents without solar noon or midnight
     for (let event of sunEvents) {
         if (event.eventType != "Solar Noon" && event.eventType != "Solar Midnight") {
@@ -871,6 +871,8 @@ export function lengths(sunEvents) {
     else if (etype == "Sunrise") {
         durations[0] += ms;
     }
-    return [durations[0], durations[0] + durations[1], durations[0] + durations[1] + durations[2],
+    return [durations[0],
+        durations[0] + durations[1],
+        durations[0] + durations[1] + durations[2],
         durations[0] + durations[1] + durations[2] + durations[3]];
 }
