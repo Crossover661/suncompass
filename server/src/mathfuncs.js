@@ -165,6 +165,15 @@ function pointLineDistance(p0, p1, p2) {
 export function isCollinear(p0, p1, p2, epsilon = 1e-6) {
     return pointLineDistance(p0, p1, p2) <= epsilon;
 }
+/** Like toFixed() function in JavaScript/TypeScript, but removes trailing zeroes. */
+export function toFixedS(n, precision) {
+    if (precision == 0) {
+        return n.toFixed(0);
+    }
+    else {
+        return n.toFixed(precision).replace(/\.?0+$/, "");
+    }
+}
 /** This function finds the approximate value of delta T, the difference between terrestrial time (recorded by atomic clocks)
 and mean solar time (based on the Earth's rotation). This function's margin of error is 4.8 seconds in 2024, based on the
 value this function returns (73.8 seconds) versus the real value (69 seconds). The margin of error increases for years before

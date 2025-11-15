@@ -3,7 +3,7 @@
  * "generateSvg" generates an SVG file showing (from top to bottom) the lengths of day, civil twilight, nautical twilight, astronomical
  * twilight and night for an entire year
  */
-import { convertToMS, isCollinear } from "./mathfuncs.js";
+import { convertToMS, isCollinear, toFixedS } from "./mathfuncs.js";
 import { intervalsSvg, lengths } from "./suncalc.js";
 import { DateTime } from "luxon";
 const svgClose = "</svg>";
@@ -24,13 +24,13 @@ function svgOpen(width, height) {
  */
 function polygonFromArray(points, fillColor = "none", strokeColor = "none", strokeWidth = 0, precision = 2) {
     const simplifiedPoints = simplifyCollinear(points);
-    const ptsAttr = simplifiedPoints.map(([x, y]) => `${x.toFixed(precision)},${y.toFixed(precision)}`).join(" "); // format the "x,y x,y ..." string
+    const ptsAttr = simplifiedPoints.map(([x, y]) => `${toFixedS(x, precision)},${toFixedS(y, precision)}`).join(" "); // format the "x,y x,y ..." string
     return `<polygon points="${ptsAttr}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>\n`;
 }
 /** Generates SVG code for a polyline from an array of points with the specified stroke color, width, and precision (digits after the
  * decimal point in the coordinates). */
 function polylineFromArray(points, color = "#000000", width = 1, precision = 2) {
-    const ptsAttr = points.map(([x, y]) => `${x.toFixed(precision)},${y.toFixed(precision)}`).join(" "); // format the "x,y x,y ..." string
+    const ptsAttr = points.map(([x, y]) => `${toFixedS(x, precision)},${toFixedS(y, precision)}`).join(" "); // format the "x,y x,y ..." string
     return `<polyline points="${ptsAttr}" fill="none" stroke="${color}" stroke-width="${width}"/>\n`;
 }
 /** Generates SVG code for a rectangle with the top-left corner at the given x and y cordinates, and the given width, height,
@@ -42,13 +42,13 @@ function rectangleSvg(x, y, width, height, fillColor = "none", strokeColor = "no
  * Text anchor can be "start" (left-aligned), "middle" (centered), or "end" (right-aligned). Alignment baseline can be either
  * "text-before-edge" (top-aligned), "middle" (centered), or "text-after-edge" (bottom-aligned). */
 function textSvg(text, x, y, fontSize, font, textColor, textAnchor, alignmentBaseline, precision = 2) {
-    return `<text x="${x.toFixed(precision)}" y="${y.toFixed(precision)}" font-family="${font}" font-size="${fontSize}pt"`
+    return `<text x="${toFixedS(x, precision)}" y="${toFixedS(y, precision)}" font-family="${font}" font-size="${fontSize}pt"`
         + ` text-anchor="${textAnchor}" alignment-baseline="${alignmentBaseline}" fill="${textColor}">${text}</text>\n`;
 }
 /** Generates an SVG line from (x1, y1) to (x2, y2) with the given color and width. */
 function lineSvg(x1, y1, x2, y2, color, width, precision = 2) {
-    return `<line x1="${x1.toFixed(precision)}" y1="${y1.toFixed(precision)}" x2="${x2.toFixed(precision)}" y2="${y2.toFixed(precision)}"`
-        + ` stroke="${color}" stroke-width="${width}" />\n`;
+    return `<line x1="${toFixedS(x1, precision)}" y1="${toFixedS(y1, precision)}" x2="${toFixedS(x2, precision)}" y2="${toFixedS(y2, precision)}"`
+        + ` stroke="${color}" stroke-width="${width}"/>\n`;
 }
 /** Returns an array of month abbreviations in the given language (represented by a language code, such as "en" for English, "es" for
  * Spanish, or "zh" for Mandarin Chinese). So far, there is only English - I plan to add more when I localize the site. */
