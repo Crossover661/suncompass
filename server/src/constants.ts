@@ -66,7 +66,7 @@ export const sunPeriodicTerms = [
  * Σl: coefficient of sine argument
  * Σr: coefficient of cosine argument
  */
-export const moon_ptld =
+export const moonPtld =
 [
     [0,0,1,0,6288774,-20905355],
     [2,0,-1,0,1274027,-3699111],
@@ -138,7 +138,7 @@ export const moon_ptld =
  * Σl: coefficient of sine argument
  * Σr: coefficient of cosine argument
  */
-export const moon_ptl = [
+export const moonPtl = [
     [0,0,0,1,5128122],
     [0,0,1,1,280602],
     [0,0,1,-1,277693],
