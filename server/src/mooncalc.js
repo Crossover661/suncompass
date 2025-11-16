@@ -64,10 +64,7 @@ function b(JC) {
     return b;
 }
 function a(JC) {
-    let a1 = 119.75 + 131.849 * JC;
-    let a2 = 53.09 + 479264.29 * JC;
-    let a3 = 313.45 + 481266.484 * JC;
-    return [a1, a2, a3];
+    return [119.75 + 131.849 * JC, 53.09 + 479264.29 * JC, 313.45 + 481266.484 * JC];
 }
 /** Variations in longitude due to the actions of Venus, Jupiter, and the flattening of Earth. */
 function deltaL(JC) {

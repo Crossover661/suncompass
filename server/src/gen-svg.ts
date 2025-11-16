@@ -4,10 +4,11 @@
  * twilight and night for an entire year
  */
 
+import { constants } from "buffer";
 import { isNullishCoalesce, ScriptSnapshot } from "../../node_modules/typescript/lib/typescript.js";
 import SunTime from "./SunTime.js";
 import {clamp, convertToMS, isCollinear, toFixedS} from "./mathfuncs.js";
-import {intervalsSvg, lengths} from "./suncalc.js";
+import {intervalsSvg, lengths, getSolstEq} from "./suncalc.js";
 import {DateTime} from "luxon";
 
 const svgClose = "</svg>";
@@ -240,7 +241,6 @@ function intervalsToPolygon(intervals: number[][][]): number[][][] {
 export function generateSvg(
     sunEvents: SunTime[][],
     type: string,
-    solsticesEquinoxes: DateTime[] = [],
     svgWidth: number = 1100,
     svgHeight: number = 550,
     leftPadding: number = 25,
@@ -433,10 +433,15 @@ export function generateSvg(
     }
     
     // draw solstices and equinoxes as green lines
-    for (let date of solsticesEquinoxes) {
-        let newYear = DateTime.fromISO(`${date.year}-01-01`, {zone: date.zone});
-        let x = xCoord(date.diff(newYear, ['days', 'hours']).days + 0.5);
-        svgString += lineSvg(x, topPadding, x, topPadding+svgHeight, "#00c000", 1);
+    if (type != "moon") {
+        const zone = typeof(sunEvents[0][0].time.zoneName) == "string" ? sunEvents[0][0].time.zoneName : "utc";
+        const year = sunEvents[0][0].time.year;
+        const solsticesEquinoxes = getSolstEq(year, zone);
+        for (const date of Object.values(solsticesEquinoxes)) {
+            const newYear = DateTime.fromISO(`${date.year}-01-01`, {zone: date.zone});
+            const x = xCoord(date.diff(newYear, ['days', 'hours']).days + 0.5);
+            svgString += lineSvg(x, topPadding, x, topPadding+svgHeight, "#00c000", 1);
+        }
     }
 
     // draw y-axis and gridlines

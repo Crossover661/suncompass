@@ -2,7 +2,7 @@
 
 import {DateTime} from "luxon";
 import {refract} from "./suncalc.js";
-import {direction} from "./mathfuncs.js";
+import {direction, ms} from "./mathfuncs.js";
 
 export default class SunTime {
     time: DateTime;
@@ -25,7 +25,7 @@ export default class SunTime {
         this.eventType = eventType;
     }
 
-    valueOf(): number {return this.time.toMillis();}
+    valueOf(): number {return ms(this.time);}
 
     toString(): string {
         let eventTypeStr = this.eventType.padStart(14);

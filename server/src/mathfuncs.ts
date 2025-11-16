@@ -1,11 +1,88 @@
 const degToRad = Math.PI/180;
 
 import { DateTime } from 'luxon';
+import { collapseTextChangeRangesAcrossMultipleVersions } from '../../node_modules/typescript/lib/typescript';
 
 /** Divide x by y, rounding the output to the nearest integer with smaller absolute value. */
 export function intDiv(x: number, y: number) {
     if (x<0) {return Math.ceil(x/y);}
     else {return Math.floor(x/y);}
+}
+
+export function ms(date: DateTime) {return Math.trunc(date.toMillis());}
+
+function fractionalYear(t: DateTime) {
+    let y = t.setZone("utc").year;
+    let begin = ms(DateTime.fromISO(`${String(y).padStart(4, "0")}-01-01T00:00:00`, {zone: "utc"}));
+    let end = ms(DateTime.fromISO(`${String(y+1).padStart(4, "0")}-01-01T00:00:00`, {zone: "utc"}));
+    let cur = ms(t);
+    return y + (cur - begin) / (end - begin);
+}
+
+export function mins(date: DateTime) {return date.hour*60 + date.minute + date.second/60 + date.millisecond/60000;}
+
+/** This function finds the approximate value of ΔT, which is calculated using the formula ΔT = TT - UT1. 
+ * 
+ * TT is terrestrial time (based on atomic clocks) and UT1 is mean solar time at 0° longitude.
+ * 
+ * This function's margin of error is 4.8 seconds in 2024, based on the value this function returns (73.8 seconds) versus the
+ * real value (69 seconds). The margin of error increases for years before 1800 and after 2100, as the Earth's rotation 
+ * varies unpredictably. */
+export function approxDeltaT(t: DateTime) {
+    let y = fractionalYear(t);
+    if (y < 500) {
+        let u = y/100;
+        return 10583.6 - 1014.41 * u + 33.78311 * u**2 - 5.952053 * u**3 - 0.1798452 * u**4 + 0.022174192 * u**5 + 0.0090316521 * u**6;
+    }
+    else if (y < 1600) {
+        let u = (y-1000)/100;
+        return 1574.2 - 556.01*u + 71.23472*u**2 + 0.319781*u**3 - 0.853463*u**4 - 0.005050998*u**5 + 0.0083572073*u**6;
+    }
+    else if (y < 1700) {
+        let t = y - 1600;
+        return 120 - 0.9808*t - 0.01532*t**2 + t**3/7129;
+    }
+    else if (y < 1800) {
+        let t = y - 1700;
+        return 8.83 + 0.1603*t - 0.0059285*t**2 + 0.00013336*t**3 - t**4/1174000;
+    }
+    else if (y < 1860) {
+        let t = y - 1800;
+        return 13.72 - 0.332447 * t + 0.0068612 * t**2 + 0.0041116 * t**3 - 0.00037436 * t**4 + 0.0000121272 * t**5 - 0.0000001699 * t**6 + 0.000000000875 * t**7;
+    }
+    else if (y < 1900) {
+        let t = y - 1860;
+        return 7.62 + 0.5737 * t - 0.251754 * t**2 + 0.01680668 * t**3 - 0.0004473624 * t**4 + t**5 / 233174;
+    }
+    else if (y < 1920) {
+        let t = y - 1900;
+        return -2.79 + 1.494119 * t - 0.0598939 * t**2 + 0.0061966 * t**3 - 0.000197 * t**4;
+    }
+    else if (y < 1941) {
+        let t = y - 1920;
+        return 21.20 + 0.84493*t - 0.076100 * t**2 + 0.0020936 * t**3;
+    }
+    else if (y < 1961) {
+        let t = y - 1950;
+        return 29.07 + 0.407*t - t**2/233 + t**3 / 2547;
+    }
+    else if (y < 1986) {
+        let t = y - 1975;
+        return 45.45 + 1.067*t - t**2/260 - t**3 / 718;
+    }
+    else if (y < 2005) {
+        let t = y - 2000;
+        return 63.86 + 0.3345 * t - 0.060374 * t**2 + 0.0017275 * t**3 + 0.000651814 * t**4 + 0.00002373599 * t**5;
+    }
+    else if (y < 2050) {
+        let t = y - 2000;
+        return 62.92 + 0.32217 * t + 0.005589 * t**2;
+    }
+    else if (y < 2150) {return 32 * ((y-1820)/100)**2 - 0.5628 * (2150 - y) - 20;}
+    else {
+        let u = (y-1820)/100;
+        return 32*u**2-20;
+    }
 }
 
 /** Clamps a number to the range [min, max]. 
@@ -19,32 +96,17 @@ export function clamp(x: number, min=-1, max=1) {
 /** Calculates x modulo y, where the output is in the range [0, y). */
 export function mod(x: number, y: number) {return ((x % y) + y) % y;}
 
-/** Calculates Julian day given Gregorian calendar date. */
-export function JD(y: number, m: number, d: number){
-    return intDiv(1461 * (y+4800 + intDiv(m-14,12)), 4) +
-    intDiv(367 * (m-2 - 12*intDiv(m-14,12)), 12) -
-    intDiv(3 * intDiv(y+4900 + intDiv(m-14, 12), 100), 4) + d - 32075;
-}
-
-export function JDN(y: number, m: number, d: number, time: number, timezone: number) {return JD(y, m, d) + (time - 60*timezone - 720)/1440;} // time in minutes after midnight
-
-export function mins(date: DateTime) {return date.hour*60 + date.minute + date.second/60 + date.millisecond/60000;}
-
-/** Calculates the Julian day number of a Luxon DateTime object. */
-export function JDNdate(date: DateTime) {
-    let year = date.year;
-    let month = date.month;
-    let day = date.day;
-    let time = mins(date);
-    let timezone = date.offset/60;
-    return JDN(year,month,day,time,timezone);
-}
-
-export function julianCentury(JDN: number) {return (JDN-2451545)/36525;}
-
-/** Calculates the Julian century number of a Luxon DateTime object. */
+/** Calculates the Julian century number of a Luxon DateTime object, corrected for delta T. 
+ * Note that there is a maximum error of 1 second due to the difference between UT1 and UTC, known as DUT1.
+*/
 export function jCentury(date: DateTime) {
-    return julianCentury(JDNdate(date));
+    let epoch = DateTime.fromISO("2000-01-01T12:00:00", {zone: "utc"});
+    let deltaT0 = Math.round(approxDeltaT(epoch)*1000);
+    epoch = epoch.minus(deltaT0); // epoch = 2000-01-01 at 12:00 TT
+
+    let deltaT = Math.round(approxDeltaT(date)*1000) - deltaT0;
+    let millis = ms(date) - ms(epoch) + deltaT;
+    return millis / 3.15576e12; // There are 3.15576e12 milliseconds in a Julian century.
 }
 
 /**
@@ -126,65 +188,4 @@ export function isCollinear(p0: number[], p1: number[], p2: number[], epsilon = 
 export function toFixedS(n: number, precision: number) {
     if (precision == 0) {return n.toFixed(0);}
     else {return n.toFixed(precision).replace(/\.?0+$/, "");}
-}
-
-/** This function finds the approximate value of delta T, the difference between terrestrial time (recorded by atomic clocks)
-and mean solar time (based on the Earth's rotation). This function's margin of error is 4.8 seconds in 2024, based on the
-value this function returns (73.8 seconds) versus the real value (69 seconds). The margin of error increases for years before
-1800 and after 2100, as the Earth's rotation varies unpredictably.*/
-export function approxDeltaT(JC: number) {
-    let y = 100*JC+2000;
-    if (y < 500) {
-        let u = y/100;
-        return 10583.6 - 1014.41 * u + 33.78311 * u**2 - 5.952053 * u**3 - 0.1798452 * u**4 + 0.022174192 * u**5 + 0.0090316521 * u**6;
-    }
-    else if (y < 1600) {
-        let u = (y-1000)/100;
-        return 1574.2 - 556.01*u + 71.23472*u**2 + 0.319781*u**3 - 0.853463*u**4 - 0.005050998*u**5 + 0.0083572073*u**6;
-    }
-    else if (y < 1700) {
-        let t = y - 1600;
-        return 120 - 0.9808*t - 0.01532*t**2 + t**3/7129;
-    }
-    else if (y < 1800) {
-        let t = y - 1700;
-        return 8.83 + 0.1603*t - 0.0059285*t**2 + 0.00013336*t**3 - t**4/1174000;
-    }
-    else if (y < 1860) {
-        let t = y - 1800;
-        return 13.72 - 0.332447 * t + 0.0068612 * t**2 + 0.0041116 * t**3 - 0.00037436 * t**4 + 0.0000121272 * t**5 - 0.0000001699 * t**6 + 0.000000000875 * t**7;
-    }
-    else if (y < 1900) {
-        let t = y - 1860;
-        return 7.62 + 0.5737 * t - 0.251754 * t**2 + 0.01680668 * t**3 - 0.0004473624 * t**4 + t**5 / 233174;
-    }
-    else if (y < 1920) {
-        let t = y - 1900;
-        return -2.79 + 1.494119 * t - 0.0598939 * t**2 + 0.0061966 * t**3 - 0.000197 * t**4;
-    }
-    else if (y < 1941) {
-        let t = y - 1920;
-        return 21.20 + 0.84493*t - 0.076100 * t**2 + 0.0020936 * t**3;
-    }
-    else if (y < 1961) {
-        let t = y - 1950;
-        return 29.07 + 0.407*t - t**2/233 + t**3 / 2547;
-    }
-    else if (y < 1986) {
-        let t = y - 1975;
-        return 45.45 + 1.067*t - t**2/260 - t**3 / 718;
-    }
-    else if (y < 2005) {
-        let t = y - 2000;
-        return 63.86 + 0.3345 * t - 0.060374 * t**2 + 0.0017275 * t**3 + 0.000651814 * t**4 + 0.00002373599 * t**5;
-    }
-    else if (y < 2050) {
-        let t = y - 2000;
-        return 62.92 + 0.32217 * t + 0.005589 * t**2;
-    }
-    else if (y < 2150) {return 32 * ((y-1820)/100)**2 - 0.5628 * (2150 - y) - 20;}
-    else {
-        let u = (y-1820)/100;
-        return 32*u**2-20;
-    }
 }

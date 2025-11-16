@@ -4,7 +4,7 @@
  * twilight and night for an entire year
  */
 import { convertToMS, isCollinear, toFixedS } from "./mathfuncs.js";
-import { intervalsSvg, lengths } from "./suncalc.js";
+import { intervalsSvg, lengths, getSolstEq } from "./suncalc.js";
 import { DateTime } from "luxon";
 const svgClose = "</svg>";
 const sunColors = ["#80c0ff", "#0060c0", "#004080", "#002040", "#000000"];
@@ -227,7 +227,7 @@ function intervalsToPolygon(intervals) {
  * The total width of the SVG file is equal to svgWidth + leftPadding + rightPadding. The height is equal to svgHeight + topPadding +
  * bottomPadding.
  */
-export function generateSvg(sunEvents, type, solsticesEquinoxes = [], svgWidth = 1100, svgHeight = 550, leftPadding = 25, rightPadding = 10, topPadding = 10, bottomPadding = 25, textSize = 11, font = "Arial", textColor = "#000000", backgroundColor = "#ffffff", language = "en", gridInterval = 2, gridlineWidth = 0.5) {
+export function generateSvg(sunEvents, type, svgWidth = 1100, svgHeight = 550, leftPadding = 25, rightPadding = 10, topPadding = 10, bottomPadding = 25, textSize = 11, font = "Arial", textColor = "#000000", backgroundColor = "#ffffff", language = "en", gridInterval = 2, gridlineWidth = 0.5) {
     const days = sunEvents.length; // 365 days for common years, 366 for leap years
     const gridColor = (type == "moon") ? "#000000" : "#808080"; // gridline color
     /** x-coordinate representing given day */
@@ -418,10 +418,15 @@ export function generateSvg(sunEvents, type, solsticesEquinoxes = [], svgWidth =
         }
     }
     // draw solstices and equinoxes as green lines
-    for (let date of solsticesEquinoxes) {
-        let newYear = DateTime.fromISO(`${date.year}-01-01`, { zone: date.zone });
-        let x = xCoord(date.diff(newYear, ['days', 'hours']).days + 0.5);
-        svgString += lineSvg(x, topPadding, x, topPadding + svgHeight, "#00c000", 1);
+    if (type != "moon") {
+        const zone = typeof (sunEvents[0][0].time.zoneName) == "string" ? sunEvents[0][0].time.zoneName : "utc";
+        const year = sunEvents[0][0].time.year;
+        const solsticesEquinoxes = getSolstEq(year, zone);
+        for (const date of Object.values(solsticesEquinoxes)) {
+            const newYear = DateTime.fromISO(`${date.year}-01-01`, { zone: date.zone });
+            const x = xCoord(date.diff(newYear, ['days', 'hours']).days + 0.5);
+            svgString += lineSvg(x, topPadding, x, topPadding + svgHeight, "#00c000", 1);
+        }
     }
     // draw y-axis and gridlines
     for (let i = 0; i <= 24; i += gridInterval) {

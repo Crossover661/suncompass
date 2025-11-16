@@ -5,16 +5,17 @@ them to be queried quickly rather than repeatedly calculated. Solstices and equi
 */
 
 import * as fs from "node:fs";
-import {marEquinox, junSolstice, sepEquinox, decSolstice} from "./suncalc.js";
+import {calcSolstEq} from "./suncalc.js";
+import {DateTime} from "luxon";
 
 let data = [];
 
 let [startYear, endYear] = [0, 2500];
 for (let year=startYear; year<=endYear; year++) {
-    let me = marEquinox(year).toISO();
-    let js = junSolstice(year).toISO();
-    let se = sepEquinox(year).toISO();
-    let ds = decSolstice(year).toISO();
+    let me = calcSolstEq(year, 3).toISO();
+    let js = calcSolstEq(year, 6).toISO();
+    let se = calcSolstEq(year, 9).toISO();
+    let ds = calcSolstEq(year, 12).toISO();
     let obj = {year: year, marEquinox: me, junSolstice: js, sepEquinox: se, decSolstice: ds};
     data.push(obj);
 }

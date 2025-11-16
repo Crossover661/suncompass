@@ -1,6 +1,6 @@
 // SunTime.ts
 import { refract } from "./suncalc.js";
-import { direction } from "./mathfuncs.js";
+import { direction, ms } from "./mathfuncs.js";
 export default class SunTime {
     /**
      * An object representing the time of a solar event (solar noon, solar midnight, dawn, dusk, sunrise, or sunset)
@@ -16,7 +16,7 @@ export default class SunTime {
         this.solarAzimuth = solarAzimuth;
         this.eventType = eventType;
     }
-    valueOf() { return this.time.toMillis(); }
+    valueOf() { return ms(this.time); }
     toString() {
         let eventTypeStr = this.eventType.padStart(14);
         let timeStr = this.time.toFormat("h:mm:ss a").toLowerCase().padStart(11);
