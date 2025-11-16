@@ -3,11 +3,11 @@ import {find} from "geo-tz";
 import {generateSvg} from "./gen-svg.js";
 import { DateTime } from "luxon";
 import fs from "fs";
-import { setUncaughtExceptionCaptureCallback } from "process";
 
 const daylengthFileName = "day-lengths.svg";
 const risesetFileName = "sunrise-sunset.svg";
 
+const start = performance.now();
 const args = process.argv;
 if (args.length != 4 && args.length != 5) {
     console.log("Syntax: node generate-svg.js <lat> <long> [year]");
@@ -41,3 +41,5 @@ console.log(`File written to ${daylengthFileName}`);
 const risesetSvg = generateSvg(sunEvents, "rise-set");
 fs.writeFileSync(risesetFileName, risesetSvg, "utf8");
 console.log(`File written to ${risesetFileName}`);
+const end = performance.now();
+console.log(`Took ${((end-start)/1000).toFixed(3)} seconds`);

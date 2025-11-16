@@ -86,16 +86,16 @@ export function sunTrueLong(date) {
 }
 /** Nutation in obliquity in degrees */
 export function obNutation(JC) {
-    const L = mod((280.4665 + 36000.7698 * JC), 360) * degToRad;
-    const Lprime = mod((218.3165 + 481267.8813 * JC), 360) * degToRad;
-    const omega = mod((125.04452 - 1934.136261 * JC + 0.0020708 * JC ** 2 + JC ** 3 / 450000), 360) * degToRad;
+    const L = mod(280.4665 + 36000.7698 * JC, 360) * degToRad;
+    const Lprime = mod(218.3165 + 481267.8813 * JC, 360) * degToRad;
+    const omega = mod(125.04452 - 1934.136261 * JC + 0.0020708 * JC ** 2 + JC ** 3 / 450000, 360) * degToRad;
     return (9.2 * Math.cos(omega) + 0.57 * Math.cos(2 * L) + 0.1 * Math.cos(2 * Lprime) - 0.09 * Math.cos(2 * omega)) / 3600;
 }
 /** Nutation in longitude in degrees */
 export function longNutation(JC) {
-    const L = mod((280.4665 + 36000.7698 * JC), 360) * degToRad;
-    const Lprime = mod((218.3165 + 481267.8813 * JC), 360) * degToRad;
-    const omega = mod((125.04452 - 1934.136261 * JC + 0.0020708 * JC ** 2 + JC ** 3 / 450000), 360) * degToRad;
+    const L = mod(280.4665 + 36000.7698 * JC, 360) * degToRad;
+    const Lprime = mod(218.3165 + 481267.8813 * JC, 360) * degToRad;
+    const omega = mod(125.04452 - 1934.136261 * JC + 0.0020708 * JC ** 2 + JC ** 3 / 450000, 360) * degToRad;
     return (-17.2 * Math.sin(omega) - 1.32 * Math.sin(2 * L) - 0.23 * Math.sin(2 * Lprime) + 0.21 * Math.sin(2 * omega)) / 3600;
 }
 /**
@@ -184,7 +184,7 @@ export function solarNoon(lat, long, date) {
     const dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 1440, can be 1380 or 1500 with DST
     const st00 = solarTime(long, beginningOfDay);
     const st24 = solarTime(long, endOfDay);
-    const stDiff = mod((st24 - st00 - 720), 1440) + 720;
+    const stDiff = mod(st24 - st00 - 720, 1440) + 720;
     const solarTimeRate = stDiff / dayLength; // the rate at which solar time changes through the day, relative to actual time
     if (st00 > 600 && st00 <= 720 && st24 > 720 && st24 < 840) { // 2 solar noons in a day
         let solarNoon0 = beginningOfDay.plus({ minutes: (720 - st00) / solarTimeRate });
@@ -229,7 +229,7 @@ export function solarMidnight(lat, long, date) {
     const dayLength = endOfDay.diff(beginningOfDay).as("minutes"); // usually 1440, can be 1380 or 1500 with DST
     const st00 = solarTime(long, beginningOfDay);
     const st24 = solarTime(long, endOfDay);
-    const stDiff = mod((st24 - st00 - 720), 1440) + 720;
+    const stDiff = mod(st24 - st00 - 720, 1440) + 720;
     const solarTimeRate = stDiff / dayLength; // the rate at which solar time changes through the day, relative to actual time
     if (st00 > 1320 && st24 < 120) { // 2 solar midnights in a day
         let solarMidnight0 = beginningOfDay.plus({ minutes: (1440 - st00) / solarTimeRate });
