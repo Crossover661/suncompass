@@ -8,15 +8,15 @@ import * as fs from "node:fs";
 import {calcSolstEq} from "./suncalc.js";
 import {DateTime} from "luxon";
 
-let data = [];
+const data = [];
 
-let [startYear, endYear] = [0, 2500];
+const [startYear, endYear] = [0, 2500];
 for (let year=startYear; year<=endYear; year++) {
-    let me = calcSolstEq(year, 3).toISO();
-    let js = calcSolstEq(year, 6).toISO();
-    let se = calcSolstEq(year, 9).toISO();
-    let ds = calcSolstEq(year, 12).toISO();
-    let obj = {year: year, marEquinox: me, junSolstice: js, sepEquinox: se, decSolstice: ds};
+    const me = calcSolstEq(year, 3).toISO();
+    const js = calcSolstEq(year, 6).toISO();
+    const se = calcSolstEq(year, 9).toISO();
+    const ds = calcSolstEq(year, 12).toISO();
+    const obj = {year: year, marEquinox: me, junSolstice: js, sepEquinox: se, decSolstice: ds};
     data.push(obj);
 }
 

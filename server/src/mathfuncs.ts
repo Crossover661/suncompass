@@ -12,10 +12,10 @@ export function intDiv(x: number, y: number) {
 export function ms(date: DateTime) {return Math.trunc(date.toMillis());}
 
 function fractionalYear(t: DateTime) {
-    let y = t.setZone("utc").year;
-    let begin = ms(DateTime.fromISO(`${String(y).padStart(4, "0")}-01-01T00:00:00`, {zone: "utc"}));
-    let end = ms(DateTime.fromISO(`${String(y+1).padStart(4, "0")}-01-01T00:00:00`, {zone: "utc"}));
-    let cur = ms(t);
+    const y = t.setZone("utc").year;
+    const begin = ms(DateTime.fromISO(`${String(y).padStart(4, "0")}-01-01T00:00:00`, {zone: "utc"}));
+    const end = ms(DateTime.fromISO(`${String(y+1).padStart(4, "0")}-01-01T00:00:00`, {zone: "utc"}));
+    const cur = ms(t);
     return y + (cur - begin) / (end - begin);
 }
 
@@ -29,58 +29,58 @@ export function mins(date: DateTime) {return date.hour*60 + date.minute + date.s
  * real value (69 seconds). The margin of error increases for years before 1800 and after 2100, as the Earth's rotation 
  * varies unpredictably. */
 export function approxDeltaT(t: DateTime) {
-    let y = fractionalYear(t);
+    const y = fractionalYear(t);
     if (y < 500) {
-        let u = y/100;
+        const u = y/100;
         return 10583.6 - 1014.41 * u + 33.78311 * u**2 - 5.952053 * u**3 - 0.1798452 * u**4 + 0.022174192 * u**5 + 0.0090316521 * u**6;
     }
     else if (y < 1600) {
-        let u = (y-1000)/100;
+        const u = (y-1000)/100;
         return 1574.2 - 556.01*u + 71.23472*u**2 + 0.319781*u**3 - 0.853463*u**4 - 0.005050998*u**5 + 0.0083572073*u**6;
     }
     else if (y < 1700) {
-        let t = y - 1600;
+        const t = y - 1600;
         return 120 - 0.9808*t - 0.01532*t**2 + t**3/7129;
     }
     else if (y < 1800) {
-        let t = y - 1700;
+        const t = y - 1700;
         return 8.83 + 0.1603*t - 0.0059285*t**2 + 0.00013336*t**3 - t**4/1174000;
     }
     else if (y < 1860) {
-        let t = y - 1800;
+        const t = y - 1800;
         return 13.72 - 0.332447 * t + 0.0068612 * t**2 + 0.0041116 * t**3 - 0.00037436 * t**4 + 0.0000121272 * t**5 - 0.0000001699 * t**6 + 0.000000000875 * t**7;
     }
     else if (y < 1900) {
-        let t = y - 1860;
+        const t = y - 1860;
         return 7.62 + 0.5737 * t - 0.251754 * t**2 + 0.01680668 * t**3 - 0.0004473624 * t**4 + t**5 / 233174;
     }
     else if (y < 1920) {
-        let t = y - 1900;
+        const t = y - 1900;
         return -2.79 + 1.494119 * t - 0.0598939 * t**2 + 0.0061966 * t**3 - 0.000197 * t**4;
     }
     else if (y < 1941) {
-        let t = y - 1920;
+        const t = y - 1920;
         return 21.20 + 0.84493*t - 0.076100 * t**2 + 0.0020936 * t**3;
     }
     else if (y < 1961) {
-        let t = y - 1950;
+        const t = y - 1950;
         return 29.07 + 0.407*t - t**2/233 + t**3 / 2547;
     }
     else if (y < 1986) {
-        let t = y - 1975;
+        const t = y - 1975;
         return 45.45 + 1.067*t - t**2/260 - t**3 / 718;
     }
     else if (y < 2005) {
-        let t = y - 2000;
+        const t = y - 2000;
         return 63.86 + 0.3345 * t - 0.060374 * t**2 + 0.0017275 * t**3 + 0.000651814 * t**4 + 0.00002373599 * t**5;
     }
     else if (y < 2050) {
-        let t = y - 2000;
+        const t = y - 2000;
         return 62.92 + 0.32217 * t + 0.005589 * t**2;
     }
     else if (y < 2150) {return 32 * ((y-1820)/100)**2 - 0.5628 * (2150 - y) - 20;}
     else {
-        let u = (y-1820)/100;
+        const u = (y-1820)/100;
         return 32*u**2-20;
     }
 }
@@ -101,11 +101,11 @@ export function mod(x: number, y: number) {return ((x % y) + y) % y;}
 */
 export function jCentury(date: DateTime) {
     let epoch = DateTime.fromISO("2000-01-01T12:00:00", {zone: "utc"});
-    let deltaT0 = Math.round(approxDeltaT(epoch)*1000);
+    const deltaT0 = Math.round(approxDeltaT(epoch)*1000);
     epoch = epoch.minus(deltaT0); // epoch = 2000-01-01 at 12:00 TT
 
-    let deltaT = Math.round(approxDeltaT(date)*1000) - deltaT0;
-    let millis = ms(date) - ms(epoch) + deltaT;
+    const deltaT = Math.round(approxDeltaT(date)*1000) - deltaT0;
+    const millis = ms(date) - ms(epoch) + deltaT;
     return millis / 3.15576e12; // There are 3.15576e12 milliseconds in a Julian century.
 }
 

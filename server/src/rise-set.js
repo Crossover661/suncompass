@@ -28,10 +28,10 @@ else if (args.length == 5) {
     [lat, long] = [Number(args[2]), Number(args[3])];
     zone = find(lat, long)[0];
     let curYear = DateTime.now().setZone(zone).year;
-    if (args[4] == "me") {date = suncalc.marEquinox(curYear, zone);}
-    else if (args[4] == "js") {date = suncalc.junSolstice(curYear, zone);}
-    else if (args[4] == "se") {date = suncalc.sepEquinox(curYear, zone);}
-    else if (args[4] == "ds") {date = suncalc.decSolstice(curYear, zone);}
+    if (args[4] == "me") {date = suncalc.getSolstEq(curYear, zone).marEquinox;}
+    else if (args[4] == "js") {date = suncalc.getSolstEq(curYear, zone).junSolstice;}
+    else if (args[4] == "se") {date = suncalc.getSolstEq(curYear, zone).sepEquinox;}
+    else if (args[4] == "ds") {date = suncalc.getSolstEq(curYear, zone).decSolstice;}
     else if (args[4] != "continuous") {date = DateTime.fromISO(args[4], {zone: zone});}
 }
 else {

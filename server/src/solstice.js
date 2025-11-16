@@ -11,14 +11,14 @@ import {subsolarPoint, getSolstEq} from "./suncalc.js";
 let year;
 let zone;
 
-let args = process.argv;
+const args = process.argv;
 if (args.length == 2) {year = DateTime.now().year;}
 else {year = args[2];}
 if (args.length <= 3) {zone = "local";}
 else {zone = args[3];}
 
-let obj = getSolstEq(year, zone);
-let [mar, jun, sep, dec] = [obj.marEquinox, obj.junSolstice, obj.sepEquinox, obj.decSolstice];
+const obj = getSolstEq(year, zone);
+const [mar, jun, sep, dec] = [obj.marEquinox, obj.junSolstice, obj.sepEquinox, obj.decSolstice];
 
 console.log("March equinox: " + mar.toFormat("MMM d, y HH:mm:ss ZZZZ"));
 console.log("Subsolar point: " + marSSP[0].toFixed(4) + ", " + marSSP[1].toFixed(4));

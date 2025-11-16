@@ -96,11 +96,11 @@ function monthEdges(leapYear: boolean = false) {
 /** Simplifies a polygon or polyline (represented as points) to remove collinear points. */
 function simplifyCollinear(points: number[][]) {
     if (points.length <= 2) {return points;}
-    let newPoints = [points[0], points[1]];
+    const newPoints = [points[0], points[1]];
     for (let i=2; i<points.length; i++) {
-        let prev = newPoints[newPoints.length-2];
-        let cur = newPoints[newPoints.length-1];
-        let next = points[i];
+        const prev = newPoints[newPoints.length-2];
+        const cur = newPoints[newPoints.length-1];
+        const next = points[i];
         if (isCollinear(prev, cur, next)) {newPoints[newPoints.length-1] = next;}
         else {newPoints.push(next);}
     }
@@ -135,7 +135,7 @@ function intervalsToPolygon(intervals: number[][][]): number[][][] {
         let inside = 0;
         let y0 = 0;
         for (const { y, d } of evts) {
-            if (inside === 1) out.push([y0, y]);
+            if (inside == 1) out.push([y0, y]);
             inside = (inside + d) & 1;
             y0 = y;
         }
@@ -267,7 +267,7 @@ export function generateSvg(
 
     /** Converts a set of durations into an array of points representing a polyon. */
     function durationsToArray(durations: number[]): number[][][] {
-        let p: number[][][] = [[]]; // p is short for polygons
+        const p: number[][][] = [[]]; // p is short for polygons
         for (let i=0; i<days; i++) {
             if (durations[i] > 0) {
                 if (i == 0 || durations[i-1] == 0) {p[0].push(
@@ -287,21 +287,21 @@ export function generateSvg(
 
     /** Used to draw lines representing solar noon on the graph. */
     function solarNoonLines() {
-        let solarNoons: number[][] = [];
-        for (let events of sunEvents) {
-            let curDay: number[] = [];
-            for (let event of events) {
+        const solarNoons: number[][] = [];
+        for (const events of sunEvents) {
+            const curDay: number[] = [];
+            for (const event of events) {
                 if (event.eventType == "Solar Noon") {curDay.push(convertToMS(event.time));}
             }
             solarNoons.push(curDay);
         }
         
-        let groups: number[][][] = []; // a group of multiple lines (number[][]), each representing a cluster of solar noons
-        for (let solarNoon of solarNoons[0]) {groups.push([[0, solarNoon]]);}
+        const groups: number[][][] = []; // a group of multiple lines (number[][]), each representing a cluster of solar noons
+        for (const solarNoon of solarNoons[0]) {groups.push([[0, solarNoon]]);}
         for (let i=1; i<days; i++) { // for each day of the year
-            for (let noon of solarNoons[i]) { // for each solar noon of the day (may be more than 1)
+            for (const noon of solarNoons[i]) { // for each solar noon of the day (may be more than 1)
                 let flag: boolean = false;
-                for (let group of groups) {
+                for (const group of groups) {
                     if (Math.abs(noon - group[group.length-1][1]) < DAY_LENGTH/48 && group[group.length-1][0] == i-1) {
                         flag = true;
                         group.push([i, noon]);
@@ -311,36 +311,36 @@ export function generateSvg(
                 if (!flag) {groups.push([[i, noon]]);}
             }
         }
-        for (let line of groups) { // convert to SVG coordinates
-            for (let point of line) {
+        for (const line of groups) { // convert to SVG coordinates
+            for (const point of line) {
                 point[0] = xCoord(point[0]+0.5);
                 point[1] = yCoord(point[1]);
             }
         }
-        let lines: string[] = [];
-        for (let line of groups) {lines.push(polylineFromArray(line, "#ff0000"));}
+        const lines: string[] = [];
+        for (const line of groups) {lines.push(polylineFromArray(line, "#ff0000"));}
         return lines;
     }
 
     /** Used to draw lines representing solar midnight on the graph. */
     function solarMidnightLines() {
-        let solarMidnights: number[][] = [];
-        for (let events of sunEvents) {
-            let curDay: number[] = [];
-            for (let event of events) {
+        const solarMidnights: number[][] = [];
+        for (const events of sunEvents) {
+            const curDay: number[] = [];
+            for (const event of events) {
                 if (event.eventType == "Solar Midnight") {curDay.push(convertToMS(event.time));}
             }
             solarMidnights.push(curDay);
         }
         
-        let groups: number[][][] = []; // a group of multiple lines (number[][]), each representing a cluster of solar midnights
-        for (let solarMidnight of solarMidnights[0]) {
+        const groups: number[][][] = []; // a group of multiple lines (number[][]), each representing a cluster of solar midnights
+        for (const solarMidnight of solarMidnights[0]) {
             groups.push([[0, solarMidnight]]);
         }
         for (let i=1; i<days; i++) { // for each day of the year
-            for (let midnight of solarMidnights[i]) { // for each solar midnight of the day (may be more than 1)
+            for (const midnight of solarMidnights[i]) { // for each solar midnight of the day (may be more than 1)
                 let flag: boolean = false;
-                for (let group of groups) {
+                for (const group of groups) {
                     if (Math.abs(midnight - group[group.length-1][1]) < DAY_LENGTH/48 && group[group.length-1][0] == i-1) {
                         flag = true;
                         group.push([i, midnight]);
@@ -350,86 +350,86 @@ export function generateSvg(
                 if (!flag) {groups.push([[i, midnight]]);}
             }
         }
-        for (let line of groups) { // convert to SVG coordinates
-            for (let point of line) {
+        for (const line of groups) { // convert to SVG coordinates
+            for (const point of line) {
                 point[0] = xCoord(point[0]+0.5);
                 point[1] = yCoord(point[1]);
             }
         }
-        let lines: string[] = [];
-        for (let line of groups) {lines.push(polylineFromArray(line, "#0000ff"));}
+        const lines: string[] = [];
+        for (const line of groups) {lines.push(polylineFromArray(line, "#0000ff"));}
         return lines;
     }
 
     function toPolygons(intervals: number[][][], color: string): string[] {
-        let polygons = intervalsToPolygon(intervals);
-        for (let polygon of polygons) {
-            for (let point of polygon) {
+        const polygons = intervalsToPolygon(intervals);
+        for (const polygon of polygons) {
+            for (const point of polygon) {
                 point[0] = xCoord(point[0]);
                 point[1] = yCoord(point[1]);
             }
         }
-        let strings: string[] = [];
-        for (let polygon of polygons) {strings.push(polygonFromArray(polygon, color));}
+        const strings: string[] = [];
+        for (const polygon of polygons) {strings.push(polygonFromArray(polygon, color));}
         return strings;
     }
 
     // generate SVG opening and background
-    let imageWidth = svgWidth + leftPadding + rightPadding;
-    let imageHeight = svgHeight + topPadding + bottomPadding;
+    const imageWidth = svgWidth + leftPadding + rightPadding;
+    const imageHeight = svgHeight + topPadding + bottomPadding;
     let svgString = svgOpen(imageWidth, imageHeight);
     svgString += rectangleSvg(0, 0, imageWidth, imageHeight, backgroundColor); // white background
 
     if (type == "length") { // day/twilight/night length plot
-        let dLengths: number[] = []; // day lengths
-        let cLengths: number[] = []; // day + civil twilight lengths
-        let nLengths: number[] = []; // day + civil + nautical twilight lengths
-        let aLengths: number[] = []; // day + civil + nautical + astronomical twilight lengths
-        for (let e of sunEvents) {
-            let dur = lengths(e);
+        const dLengths: number[] = []; // day lengths
+        const cLengths: number[] = []; // day + civil twilight lengths
+        const nLengths: number[] = []; // day + civil + nautical twilight lengths
+        const aLengths: number[] = []; // day + civil + nautical + astronomical twilight lengths
+        for (const e of sunEvents) {
+            const dur = lengths(e);
             dLengths.push(dur[0]);
             cLengths.push(dur[1]);
             nLengths.push(dur[2]);
             aLengths.push(dur[3]);
         }
-        let dp = durationsToArray(dLengths); // day polygons
-        let cp = durationsToArray(cLengths); // civil twilight polygons
-        let np = durationsToArray(nLengths); // nautical twilight polygons
-        let ap = durationsToArray(aLengths); // astronomical twilight polygons
+        const dp = durationsToArray(dLengths); // day polygons
+        const cp = durationsToArray(cLengths); // civil twilight polygons
+        const np = durationsToArray(nLengths); // nautical twilight polygons
+        const ap = durationsToArray(aLengths); // astronomical twilight polygons
         
         // construct SVG day length diagram
         svgString += rectangleSvg(leftPadding, topPadding, svgWidth, svgHeight, sunColors[4]); // night
-        for (let polygon of ap) {svgString += polygonFromArray(polygon, sunColors[3]);} // astronomical twilight
-        for (let polygon of np) {svgString += polygonFromArray(polygon, sunColors[2]);} // nautical twilight
-        for (let polygon of cp) {svgString += polygonFromArray(polygon, sunColors[1]);} // civil twilight
-        for (let polygon of dp) {svgString += polygonFromArray(polygon, sunColors[0]);} // daylight
+        for (const polygon of ap) {svgString += polygonFromArray(polygon, sunColors[3]);} // astronomical twilight
+        for (const polygon of np) {svgString += polygonFromArray(polygon, sunColors[2]);} // nautical twilight
+        for (const polygon of cp) {svgString += polygonFromArray(polygon, sunColors[1]);} // civil twilight
+        for (const polygon of dp) {svgString += polygonFromArray(polygon, sunColors[0]);} // daylight
     }
     else if (type == "rise-set") { // sunrise, sunset, dusk, dawn plot
-        let aIntervals: number[][][] = []; // intervals of astronomical twilight or brighter
-        let nIntervals: number[][][] = []; // intervals of nautical twilight or brighter
-        let cIntervals: number[][][] = []; // intervals of civil twilight or brighter
-        let dIntervals: number[][][] = []; // intervals of daylight
+        const aIntervals: number[][][] = []; // intervals of astronomical twilight or brighter
+        const nIntervals: number[][][] = []; // intervals of nautical twilight or brighter
+        const cIntervals: number[][][] = []; // intervals of civil twilight or brighter
+        const dIntervals: number[][][] = []; // intervals of daylight
 
-        for (let event of sunEvents) {
-            let int = intervalsSvg(event);
+        for (const event of sunEvents) {
+            const int = intervalsSvg(event);
             aIntervals.push(int[3]);
             nIntervals.push(int[2]);
             cIntervals.push(int[1]);
             dIntervals.push(int[0]);
         }
         
-        let aPolygons = toPolygons(aIntervals, sunColors[3]); // astronomical twilight
-        let nPolygons = toPolygons(nIntervals, sunColors[2]); // nautical twilight
-        let cPolygons = toPolygons(cIntervals, sunColors[1]); // civil twilight
-        let dPolygons = toPolygons(dIntervals, sunColors[0]); // daylight
+        const aPolygons = toPolygons(aIntervals, sunColors[3]); // astronomical twilight
+        const nPolygons = toPolygons(nIntervals, sunColors[2]); // nautical twilight
+        const cPolygons = toPolygons(cIntervals, sunColors[1]); // civil twilight
+        const dPolygons = toPolygons(dIntervals, sunColors[0]); // daylight
 
-        let allPolygons = [...aPolygons, ...nPolygons, ...cPolygons, ...dPolygons];
+        const allPolygons = [...aPolygons, ...nPolygons, ...cPolygons, ...dPolygons];
 
         svgString += rectangleSvg(leftPadding, topPadding, svgWidth, svgHeight, sunColors[4]); // night
-        for (let polygon of allPolygons) {svgString += polygon;} // twilight + daylight
+        for (const polygon of allPolygons) {svgString += polygon;} // twilight + daylight
 
-        let noonMidnightLines = [...solarMidnightLines(), ...solarNoonLines()];
-        for (let line of noonMidnightLines) {svgString += line;}
+        const noonMidnightLines = [...solarMidnightLines(), ...solarNoonLines()];
+        for (const line of noonMidnightLines) {svgString += line;}
     }
     
     // draw solstices and equinoxes as green lines
@@ -446,15 +446,15 @@ export function generateSvg(
 
     // draw y-axis and gridlines
     for (let i=0; i<=24; i+=gridInterval) {
-        let y = yCoord((i/24)*DAY_LENGTH);
+        const y = yCoord((i/24)*DAY_LENGTH);
         svgString += textSvg(String(i), leftPadding-5, y, textSize, font, textColor, "end", "middle");
         svgString += lineSvg(leftPadding, y, leftPadding+svgWidth, y, gridColor, gridlineWidth);
     }
 
     // draw x-axis and gridlines
     for (let i=0; i<12; i++) {
-        let x = xCoord(monthEdges(days != 365)[i]);
-        let xText = (x + xCoord(monthEdges(days != 365)[i+1]))/2;
+        const x = xCoord(monthEdges(days != 365)[i]);
+        const xText = (x + xCoord(monthEdges(days != 365)[i+1]))/2;
         svgString += textSvg(months(language)[i], xText, topPadding+svgHeight+12, textSize, font, textColor, "middle", "middle");
         svgString += lineSvg(x, topPadding, x, topPadding+svgHeight, gridColor, gridlineWidth);
     }

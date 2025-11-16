@@ -18,10 +18,10 @@ export default class SunTime {
     }
     valueOf() { return ms(this.time); }
     toString() {
-        let eventTypeStr = this.eventType.padStart(14);
-        let timeStr = this.time.toFormat("h:mm:ss a").toLowerCase().padStart(11);
-        let solarElevationStr = (refract(this.solarElevation).toFixed(4) + "°").padStart(9);
-        let solarAzimuthStr = (this.solarAzimuth.toFixed(4) + "° " + direction(this.solarAzimuth).padStart(3)).padStart(13);
+        const eventTypeStr = this.eventType.padStart(14);
+        const timeStr = this.time.toFormat("h:mm:ss a").toLowerCase().padStart(11);
+        const solarElevationStr = (refract(this.solarElevation).toFixed(4) + "°").padStart(9);
+        const solarAzimuthStr = (this.solarAzimuth.toFixed(4) + "° " + direction(this.solarAzimuth).padStart(3)).padStart(13);
         return eventTypeStr + " | " + timeStr + " | " + solarElevationStr + " | " + solarAzimuthStr;
     }
     /** Converts to a formatted string. Red, green, and blue must be integers. */
