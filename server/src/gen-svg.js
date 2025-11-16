@@ -206,7 +206,7 @@ function intervalsToPolygon(intervals) {
 /**
  * Returns a string containing an SVG diagram for either day/twilight/night lengths throughout the year, or the times of day in which
  * day, night, and each stage of twilight occur.
- * @param sunEvents Values of "allSunEvents" for each day of the year.
+ * @param events Values of "allSunEvents" for each day of the year.
  * @param type Set to "length" to generate a day/night/twilight length chart, or "rise-set" to generate a chart with times of day.
  * @param solsticesEquinoxes Solstices and equinoxes for the given year, as an array of four DateTimes. They will appear as green lines on the diagram.
  * @param svgWidth Width of the chart (not the entire SVG file) in pixels. Defaults to 1000.
@@ -227,8 +227,8 @@ function intervalsToPolygon(intervals) {
  * The total width of the SVG file is equal to svgWidth + leftPadding + rightPadding. The height is equal to svgHeight + topPadding +
  * bottomPadding.
  */
-export function generateSvg(sunEvents, type, svgWidth = 1100, svgHeight = 550, leftPadding = 25, rightPadding = 10, topPadding = 10, bottomPadding = 25, textSize = 11, font = "Arial", textColor = "#000000", backgroundColor = "#ffffff", language = "en", gridInterval = 2, gridlineWidth = 0.5) {
-    const days = sunEvents.length; // 365 days for common years, 366 for leap years
+export function generateSvg(events, type, svgWidth = 1100, svgHeight = 550, leftPadding = 25, rightPadding = 10, topPadding = 10, bottomPadding = 25, textSize = 11, font = "Arial", textColor = "#000000", backgroundColor = "#ffffff", language = "en", gridInterval = 2, gridlineWidth = 0.5) {
+    const days = events.length; // 365 days for common years, 366 for leap years
     const gridColor = (type == "moon") ? "#000000" : "#808080"; // gridline color
     /** x-coordinate representing given day */
     function xCoord(dayNumber) { return leftPadding + svgWidth * (dayNumber / days); }
@@ -258,9 +258,9 @@ export function generateSvg(sunEvents, type, svgWidth = 1100, svgHeight = 550, l
     /** Used to draw lines representing solar noon on the graph. */
     function solarNoonLines() {
         const solarNoons = [];
-        for (const events of sunEvents) {
+        for (const evts of events) {
             const curDay = [];
-            for (const event of events) {
+            for (const event of evts) {
                 if (event.eventType == "Solar Noon") {
                     curDay.push(convertToMS(event.time));
                 }
@@ -301,9 +301,9 @@ export function generateSvg(sunEvents, type, svgWidth = 1100, svgHeight = 550, l
     /** Used to draw lines representing solar midnight on the graph. */
     function solarMidnightLines() {
         const solarMidnights = [];
-        for (const events of sunEvents) {
+        for (const evts of events) {
             const curDay = [];
-            for (const event of events) {
+            for (const event of evts) {
                 if (event.eventType == "Solar Midnight") {
                     curDay.push(convertToMS(event.time));
                 }
@@ -365,7 +365,7 @@ export function generateSvg(sunEvents, type, svgWidth = 1100, svgHeight = 550, l
         const cLengths = []; // day + civil twilight lengths
         const nLengths = []; // day + civil + nautical twilight lengths
         const aLengths = []; // day + civil + nautical + astronomical twilight lengths
-        for (const e of sunEvents) {
+        for (const e of events) {
             const dur = lengths(e);
             dLengths.push(dur[0]);
             cLengths.push(dur[1]);
@@ -396,7 +396,7 @@ export function generateSvg(sunEvents, type, svgWidth = 1100, svgHeight = 550, l
         const nIntervals = []; // intervals of nautical twilight or brighter
         const cIntervals = []; // intervals of civil twilight or brighter
         const dIntervals = []; // intervals of daylight
-        for (const event of sunEvents) {
+        for (const event of events) {
             const int = intervalsSvg(event);
             aIntervals.push(int[3]);
             nIntervals.push(int[2]);
@@ -419,8 +419,8 @@ export function generateSvg(sunEvents, type, svgWidth = 1100, svgHeight = 550, l
     }
     // draw solstices and equinoxes as green lines
     if (type != "moon") {
-        const zone = typeof (sunEvents[0][0].time.zoneName) == "string" ? sunEvents[0][0].time.zoneName : "utc";
-        const year = sunEvents[0][0].time.year;
+        const zone = typeof (events[0][0].time.zoneName) == "string" ? events[0][0].time.zoneName : "utc";
+        const year = events[0][0].time.year;
         const solsticesEquinoxes = getSolstEq(year, zone);
         for (const date of Object.values(solsticesEquinoxes)) {
             const newYear = DateTime.fromISO(`${date.year}-01-01`, { zone: date.zone });
