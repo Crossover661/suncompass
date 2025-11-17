@@ -1,5 +1,5 @@
 /** Formulas derived from "Astronomical Algorithms" by Jean Meeus. */
-import { clamp, mod, jCentury, rotateZ, elevAzimuth } from "./mathfuncs.js";
+import { clamp, mod, jCentury, rotateZ, latLongEcef, elevAzimuth } from "./mathfuncs.js";
 import { meanSunAnomaly, longNutation, obliquity, gast } from "./suncalc.js";
 import { degToRad, earthERadius, flattening, moonPtl, moonPtld } from "./constants.js";
 export function moonMeanLongitude(JC) {
@@ -146,7 +146,14 @@ export function sublunarPoint(date) {
 export function moonAngularRadius(date) {
     return (1737.4 / moonDistance(date)) / degToRad;
 }
-/** Returns the moon's position: [elevation, azimuth] in degrees. */
-export function moonPosition(lat, long, date) {
-    return elevAzimuth(lat, long, moonEcef(date));
+/** Returns the moon's position: [elevation, azimuth] in degrees. Optionally, the observer's ECEF can be specified in order
+ * to avoid repeatedly computing it.
+*/
+export function moonPosition(lat, long, date, ecefO) {
+    if (ecefO === undefined) {
+        return elevAzimuth(lat, long, latLongEcef(lat, long), moonEcef(date));
+    }
+    else {
+        return elevAzimuth(lat, long, ecefO, moonEcef(date));
+    }
 }

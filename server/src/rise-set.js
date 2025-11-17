@@ -2,9 +2,9 @@ import { DateTime, Duration } from "luxon";
 import {find} from "geo-tz";
 import * as sc from "./suncalc.js";
 import SunTime from "./SunTime.js";
-import {direction} from "./mathfuncs.js";
+import {direction, latLongEcef} from "./mathfuncs.js";
 
-let args = process.argv;
+const args = process.argv;
 let lat, long, zone, date;
 if (args.length == 2) {
     [lat, long] = [34.42,-119.85]; // the location around the University of California, Santa Barbara
@@ -27,7 +27,7 @@ else if (args.length == 5) {
     */
     [lat, long] = [Number(args[2]), Number(args[3])];
     zone = find(lat, long)[0];
-    let curYear = DateTime.now().setZone(zone).year;
+    const curYear = DateTime.now().setZone(zone).year;
     if (args[4] == "me") {date = sc.getSolstEq(curYear, zone).marEquinox;}
     else if (args[4] == "js") {date = sc.getSolstEq(curYear, zone).junSolstice;}
     else if (args[4] == "se") {date = sc.getSolstEq(curYear, zone).sepEquinox;}
@@ -40,11 +40,11 @@ else {
 }
 
 // Print subsolar point, sun's apparent elevation, and solar noon/midnight/sunrise/sunset/twilight times.
-function printSunInfo(lat, long, zone, date) {
-    let subsolarPoint = sc.subsolarPoint(date);
-    let [elev, az] = sc.sunPosition(lat, long, date);
-    let apparentElev = sc.refract(elev);
-    let dist = sc.sunDistance(date);
+function printSunInfo(lat, long, zone, date, ecef) {
+    const subsolarPoint = sc.subsolarPoint(date);
+    const [elev, az] = sc.sunPosition(lat, long, date, ecef);
+    const apparentElev = sc.refract(elev);
+    const dist = sc.sunDistance(date);
 
     process.stdout.write(`\r${zone}\n`);
     process.stdout.write(`\r${date.toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS)}\n`);
@@ -54,14 +54,14 @@ function printSunInfo(lat, long, zone, date) {
     process.stdout.write(`\rSun-earth distance: ${dist.toFixed(0)} km (${(dist/1.609344).toFixed(0)} mi)\n`);
 
     // Print day length
-    let dayLength = Math.round(sc.dayLength(lat, long, date));
+    const dayLength = Math.round(sc.dayLength(lat, long, date, ecef));
     if (dayLength == -1) {process.stdout.write("\rDay length: undefined\n");}
     else {process.stdout.write(`\rDay length: ${Duration.fromObject({seconds: dayLength}).toFormat("h:mm:ss")}\n\r\n`);}
 
     // Print sunrise, sunset, solar noon, solar midnight, and twilight times
-    let solarEvents = sc.allSunEvents(lat, long, date);
+    const solarEvents = sc.allSunEvents(lat, long, date, ecef);
     process.stdout.write(`\r         Event |        Time | Elevation |       Bearing\n`); // header
-    for (let event of solarEvents) {
+    for (const event of solarEvents) {
         let bold = false;
         if (event.eventType == "Sunrise" || event.eventType == "Sunset" || event.eventType == "Solar Noon") {bold = true};
         let [r, g, b] = [128, 128, 128];
@@ -73,14 +73,15 @@ function printSunInfo(lat, long, zone, date) {
     return 9 + solarEvents.length; // number of lines in output
 }
 
-function printEverySecond(lat, long, zone, lines = 0) {
+function printEverySecond(lat, long, zone, ecef, lines = 0) {
     const date = DateTime.now().setZone(zone);
     if (lines > 0) {process.stdout.write(`\x1b[${lines}A`);}
-    const l = printSunInfo(lat, long, zone, date.set({millisecond: 0}));
-    setTimeout(printEverySecond(lat, long, zone, l), 1000 - date.millisecond); // delay until next full second
+    const l = printSunInfo(lat, long, zone, date.set({millisecond: 0}), ecef);
+    setTimeout(printEverySecond(lat, long, zone, ecef, l), 1000 - date.millisecond); // delay until next full second
 }
 
+const ecef = latLongEcef(lat, long);
 if (Math.abs(lat) >= 90) {console.log("Latitude must be between -90 and 90, exclusive (use ±89.9999 for poles)");}
 else if (Math.abs(long) > 180) {console.log("Longitude must be between -180 and 180");}
-else if (date == null) {printEverySecond(lat, long, zone);}
-else {printSunInfo(lat, long, zone, date);}
+else if (date == null) {printEverySecond(lat, long, zone, ecef);}
+else {printSunInfo(lat, long, zone, date, ecef);}

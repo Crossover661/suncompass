@@ -248,13 +248,14 @@ export function toEcef(lat: number, long: number, dist: number): number[] {
  * elevation and azimuth of the object.
  * @param lat Geodetic latitude of observer.
  * @param long Longitude of observer.
- * @param ecef ECEF coordinates of celestial object (planet, moon, star).
+ * @param ecefO ECEF coordinates of observer.
+ * @param ecefC ECEF coordinates of celestial object (planet, moon, star).
  * @returns [elevation, azimuth] of celestial object as seen from observer. Both are given in degrees. Elevation is in degrees
  * above the horizon, and azimuth is in degrees clockwise from north (range 0 <= a < 360).
  */
-export function elevAzimuth(lat: number, long: number, ecef: number[]): number[] {
-    const [xe, ye, ze] = ecef; // celestial body's ECEF
-    const [xo, yo, zo] = latLongEcef(lat, long); // observer's ECEF
+export function elevAzimuth(lat: number, long: number, ecefO: number[], ecefC: number[]): number[] {
+    const [xe, ye, ze] = ecefC; // celestial body's ECEF
+    const [xo, yo, zo] = ecefO; // observer's ECEF
     const [dx, dy, dz] = [xe-xo, ye-yo, ze-zo];
 
     // rotate ECEF coordinates to local ENU (east, north, up) at observer

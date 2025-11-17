@@ -3,6 +3,7 @@ import {find} from "geo-tz";
 import {generateSvg} from "./gen-svg.js";
 import { DateTime } from "luxon";
 import fs from "fs";
+import { latLongEcef } from "./mathfuncs.js";
 
 const daylengthFileName = "day-lengths.svg";
 const risesetFileName = "sunrise-sunset.svg";
@@ -24,13 +25,14 @@ else if (Math.abs(long) > 180) {
     process.exit(1);
 }
 const timeZone = find(lat, long)[0];
+const ecef = latLongEcef(lat, long);
 const year = DateTime.now().setZone(timeZone).year;
 if (args.length == 5) {year = Number(args[4]);}
 
 const sunEvents = [];
 let date = DateTime.fromISO(`${year}-01-01`, {zone: timeZone});
 while (date.year == year) {
-    sunEvents.push(allSunEvents(lat, long, date));
+    sunEvents.push(allSunEvents(lat, long, date, ecef));
     date = date.plus({days: 1});
 }
 
