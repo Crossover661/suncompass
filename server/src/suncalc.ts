@@ -21,8 +21,6 @@ import {clamp, mod, mins, jCentury, approxDeltaT, startOfDay, startNextDay, conv
 import {DateTime} from "luxon";
 import {degToRad, sunPeriodicTerms} from "./constants.js";
 import * as fs from "fs";
-import { couldStartTrivia, nodeModuleNameResolver, NumericLiteral } from "../../node_modules/typescript/lib/typescript.js";
-import { time } from "console";
 import SunTime from "./SunTime.js";
 
 export type SeasonEvents = {marEquinox: DateTime; junSolstice: DateTime; sepEquinox: DateTime; decSolstice: DateTime;};

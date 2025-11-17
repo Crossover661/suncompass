@@ -4,8 +4,6 @@
  * twilight and night for an entire year
  */
 
-import { constants } from "buffer";
-import { isNullishCoalesce, ScriptSnapshot } from "../../node_modules/typescript/lib/typescript.js";
 import SunTime from "./SunTime.js";
 import {clamp, convertToMS, isCollinear, toFixedS} from "./mathfuncs.js";
 import {intervalsSvg, lengths, getSolstEq} from "./suncalc.js";

@@ -2,7 +2,6 @@ const degToRad = Math.PI/180;
 
 import { DateTime } from 'luxon';
 import {earthERadius, earthPRadius, flattening} from "./constants.js";
-import { collapseTextChangeRangesAcrossMultipleVersions } from '../../node_modules/typescript/lib/typescript';
 
 /** Divide x by y, rounding the output to the nearest integer with smaller absolute value. */
 export function intDiv(x: number, y: number) {
