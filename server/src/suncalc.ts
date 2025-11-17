@@ -17,7 +17,7 @@ durations, conversion between different time zones, and complexities such as day
 the time zone of a geographic coordinate.
 */
 
-import {clamp, mod, mins, jCentury, approxDeltaT, startOfDay, startNextDay, convertToMS, ms, jdUTC, geocentric2geodetic, toEcef, elevAzimuth, latLongEcef} from "./mathfuncs.js";
+import {clamp, mod, mins, jCentury, approxDeltaT, startOfDay, startNextDay, convertToMS, ms, jdUTC, toEcef, elevAzimuth, latLongEcef} from "./mathfuncs.js";
 import {DateTime} from "luxon";
 import {degToRad, sunPeriodicTerms} from "./constants.js";
 import * as fs from "fs";
@@ -123,7 +123,7 @@ export function obliquity(date: number | DateTime): number {
 }
 
 /**
- * Returns the sun's declination in degrees. This is the geodetic latitude of the subsolar point.
+ * Returns the sun's declination in degrees. This is the latitude of the subsolar point.
  * @param date A Luxon DateTime object, or a number representing the Julian century.
  */
 export function declination(date: number | DateTime): number {
@@ -193,7 +193,7 @@ export function solarTime(longitude: number, date: DateTime): number {
 
 /**
  * Returns the time(s) of solar noon, along with the sun's position at solar noon.
- * @param latitude Geodetic latitude in degrees.
+ * @param latitude Latitude in degrees.
  * @param longitude Longitude in degrees.
  * @param date SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for solar noon.
  * @param ecef Observer's ECEF coordinates (optional)
@@ -235,7 +235,7 @@ export function solarNoon(lat: number, long: number, date: DateTime, ecef?: numb
 
 /**
  * Returns the time(s) of solar midnight, along with the sun's position at solar midnight.
- * @param latitude Geodetic latitude in degrees.
+ * @param latitude Latitude in degrees.
  * @param longitude Longitude in degrees.
  * @param date SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for solar noon.
  * @param ecef Observer's ECEF coordinates (optional)
@@ -291,7 +291,7 @@ export function subsolarPoint(date = DateTime.now().toUTC()): number[] {
 
 /**
  * Returns sun position given latitude, longitude, and DateTime.
- * @param lat Latitude in degrees (geodetic)
+ * @param lat Latitude in degrees
  * @param long Longitude in degrees
  * @param date Luxon DateTime object
  * @param ecefO Observer's ECEF (optional)
