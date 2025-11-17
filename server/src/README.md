@@ -22,19 +22,12 @@ York City on December 31, 2025 at 16:15 (4:15 pm) eastern standard time, along w
 longitude at the March equinox (me), June solstice (js), September equinox (se), or December solstice (ds).
 
 Note: to find data for the north or south poles, set the latitude to ±89.9999, not ±90. Solar noon and midnight are undefined at 
-latitude ±90. 
-
-Also, the subsolar point's given latitude is geodetic. Geographical coordinates are always specified using geodetic latitude, 
-although some astronomical source give the subsolar point's geocentric latitude instead. Sun Compass uses geodetic latitude for all
-geographical coordinates, including subsolar point.
+latitude ±90.
 
 ## solstice.js
 
 `node solstice.js`: Prints the solstices and equinoxes in the current year (in the local time zone of the device) along with the 
 subsolar point (the position on Earth at which the sun is directly overhead) at each solstice and equinox.
-
-Note that the subsolar point's latitude is geodetic. Geographical coordinates are always specified using geodetic latitude, although
-some astronomical source give the subsolar point's geocentric latitude instead.
 
 `node solstice.js <year>`: Prints the times of solstices and equinoxes in the given year, in the device's local time zone, along with
 subsolar points.

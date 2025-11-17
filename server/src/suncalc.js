@@ -16,7 +16,7 @@ This site uses the Luxon library to deal with date/time computations. Luxon is u
 durations, conversion between different time zones, and complexities such as daylight saving time. The geo-tz library is used to find
 the time zone of a geographic coordinate.
 */
-import { clamp, mod, mins, jCentury, startOfDay, startNextDay, convertToMS, ms, jdUTC, geocentric2geodetic, toEcef, elevAzimuth, latLongEcef } from "./mathfuncs.js";
+import { clamp, mod, mins, jCentury, startOfDay, startNextDay, convertToMS, ms, jdUTC, toEcef, elevAzimuth, latLongEcef } from "./mathfuncs.js";
 import { DateTime } from "luxon";
 import { degToRad, sunPeriodicTerms } from "./constants.js";
 import * as fs from "fs";
@@ -122,7 +122,7 @@ export function obliquity(date) {
     }
 }
 /**
- * Returns the sun's declination in degrees. This is the geocentric latitude of the subsolar point.
+ * Returns the sun's declination in degrees. This is the geodetic latitude of the subsolar point.
  * @param date A Luxon DateTime object, or a number representing the Julian century.
  */
 export function declination(date) {
@@ -294,12 +294,11 @@ export function solarMidnight(lat, long, date, ecef) {
 /**
  * Returns the subsolar point, or location on Earth at which the sun is directly overhead.
  * @param date Luxon DateTime object.
- * @param geocentric If false (default), outputs geodetic latitude. If true, outputs geocentric latitude
  * @returns [latitude, longitude] of subsolar point
  */
-export function subsolarPoint(date = DateTime.now().toUTC(), geocentric = false) {
+export function subsolarPoint(date = DateTime.now().toUTC()) {
     const JC = jCentury(date);
-    const subsolarLat = geocentric ? declination(JC) : geocentric2geodetic(declination(JC));
+    const subsolarLat = declination(JC);
     const soltime0 = mins(date.toUTC()) + equationOfTime(JC); // solar time at Greenwich meridian (longitude 0)
     const subsolarLong = mod(-soltime0 / 4, 360) - 180;
     return [subsolarLat, subsolarLong];
@@ -314,7 +313,7 @@ export function subsolarPoint(date = DateTime.now().toUTC(), geocentric = false)
  * Solar elevation is not refracted. To find the solar elevation angle adjusted for atmospheric refraction, use refract(sunPosition[0])
  */
 export function sunPosition(lat, long, date, ecefO) {
-    const [sunLat, sunLong] = subsolarPoint(date, true); // geocentric subsolar point
+    const [sunLat, sunLong] = subsolarPoint(date);
     const sunEcef = toEcef(sunLat, sunLong, sunDistance(date));
     if (ecefO === undefined) {
         return elevAzimuth(lat, long, latLongEcef(lat, long), sunEcef);
