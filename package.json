@@ -12,11 +12,9 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@types/luxon": "^3.4.2",
     "@types/node": "^20.12.7",
     "express": "^4.19.2",
     "geo-tz": "^8.0.2",
-    "luxon": "^3.4.4",
     "typescript": "^5.4.5"
   }
 }
