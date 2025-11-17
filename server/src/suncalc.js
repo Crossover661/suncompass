@@ -16,7 +16,7 @@ This site uses the Luxon library to deal with date/time computations. Luxon is u
 durations, conversion between different time zones, and complexities such as daylight saving time. The geo-tz library is used to find
 the time zone of a geographic coordinate.
 */
-import { clamp, mod, mins, jCentury, startOfDay, startNextDay, convertToMS, ms } from "./mathfuncs.js";
+import { clamp, mod, mins, jCentury, startOfDay, startNextDay, convertToMS, ms, jdUTC, geocentric2geodetic, toEcef, elevAzimuth } from "./mathfuncs.js";
 import { DateTime } from "luxon";
 import { degToRad, sunPeriodicTerms } from "./constants.js";
 import * as fs from "fs";
@@ -85,18 +85,28 @@ export function sunTrueLong(date) {
     }
 }
 /** Nutation in obliquity in degrees */
-export function obNutation(JC) {
-    const L = mod(280.4665 + 36000.7698 * JC, 360) * degToRad;
-    const Lprime = mod(218.3165 + 481267.8813 * JC, 360) * degToRad;
-    const omega = mod(125.04452 - 1934.136261 * JC + 0.0020708 * JC ** 2 + JC ** 3 / 450000, 360) * degToRad;
-    return (9.2 * Math.cos(omega) + 0.57 * Math.cos(2 * L) + 0.1 * Math.cos(2 * Lprime) - 0.09 * Math.cos(2 * omega)) / 3600;
+export function obNutation(date) {
+    if (typeof (date) == "number") {
+        const L = mod(280.4665 + 36000.7698 * date, 360) * degToRad;
+        const Lprime = mod(218.3165 + 481267.8813 * date, 360) * degToRad;
+        const omega = mod(125.04452 - 1934.136261 * date + 0.0020708 * date ** 2 + date ** 3 / 450000, 360) * degToRad;
+        return (9.2 * Math.cos(omega) + 0.57 * Math.cos(2 * L) + 0.1 * Math.cos(2 * Lprime) - 0.09 * Math.cos(2 * omega)) / 3600;
+    }
+    else {
+        return obNutation(jCentury(date));
+    }
 }
 /** Nutation in longitude in degrees */
-export function longNutation(JC) {
-    const L = mod(280.4665 + 36000.7698 * JC, 360) * degToRad;
-    const Lprime = mod(218.3165 + 481267.8813 * JC, 360) * degToRad;
-    const omega = mod(125.04452 - 1934.136261 * JC + 0.0020708 * JC ** 2 + JC ** 3 / 450000, 360) * degToRad;
-    return (-17.2 * Math.sin(omega) - 1.32 * Math.sin(2 * L) - 0.23 * Math.sin(2 * Lprime) + 0.21 * Math.sin(2 * omega)) / 3600;
+export function longNutation(date) {
+    if (typeof (date) == "number") {
+        const L = mod(280.4665 + 36000.7698 * date, 360) * degToRad;
+        const Lprime = mod(218.3165 + 481267.8813 * date, 360) * degToRad;
+        const omega = mod(125.04452 - 1934.136261 * date + 0.0020708 * date ** 2 + date ** 3 / 450000, 360) * degToRad;
+        return (-17.2 * Math.sin(omega) - 1.32 * Math.sin(2 * L) - 0.23 * Math.sin(2 * Lprime) + 0.21 * Math.sin(2 * omega)) / 3600;
+    }
+    else {
+        return longNutation(jCentury(date));
+    }
 }
 /**
  * Returns the obliquity of the ecliptic, or equivalently Earth's axial tilt.
@@ -112,12 +122,14 @@ export function obliquity(date) {
     }
 }
 /**
- * Returns the sun's declination in degrees. This is the latitude of the subsolar point.
+ * Returns the sun's declination in degrees. This is the geocentric latitude of the subsolar point.
  * @param date A Luxon DateTime object, or a number representing the Julian century.
  */
 export function declination(date) {
     if (typeof (date) == "number") {
-        return Math.asin(clamp(Math.sin(obliquity(date) * degToRad) * Math.sin(sunTrueLong(date) * degToRad))) / degToRad;
+        const ob = obliquity(date) * degToRad;
+        const long = sunTrueLong(date) * degToRad;
+        return Math.asin(clamp(Math.sin(ob) * Math.sin(long))) / degToRad;
     }
     else {
         return declination(jCentury(date));
@@ -145,16 +157,23 @@ export function sunRA(date) {
  */
 export function equationOfTime(date) {
     if (typeof (date) == "number") {
-        const meanLong = sunMeanLong(date);
-        const ra = sunRA(date);
-        const nutation = longNutation(date);
-        const ob = obliquity(date);
-        const eot = meanLong - 0.0057183 - ra + nutation * Math.cos(ob * degToRad); // in degrees
+        const eot = sunMeanLong(date) - 0.0057183 - sunRA(date) + longNutation(date) * Math.cos(obliquity(date) * degToRad); // in degrees
         return mod(4 * eot + 720, 1440) - 720; // reduce to range [-720, 720] if absolute value too large
     }
     else {
         return equationOfTime(jCentury(date));
     }
+}
+/** Gives the value of Greenwich apparent sidereal time (GAST) in degrees, from equation 11.4 in Astronomical Algorithms.
+ * The value returned is in the range 0 <= x < 360.
+ * @param date A Luxon DateTime object, or a number representing the Julian century.
+ */
+export function gast(date) {
+    const JD = jdUTC(date); // Julian day but using UTC (approximation to UT1) rather than TT
+    const JC = (JD - 2451545) / 36525; // Julian century, but with UTC rather than TT
+    const gmst = 280.46061837 + 360.98564736629 * (JD - 2451545) + 3.87933e-4 * JC ** 2 - JC ** 3 / 38710000;
+    const correction = longNutation(date) * Math.cos(obliquity(date) * degToRad);
+    return mod(gmst + correction, 360);
 }
 /**
  * Returns sun's angular radius in degrees. To find the angular diameter, multiply this value by 2.
@@ -265,35 +284,28 @@ export function solarMidnight(lat, long, date) {
 /**
  * Returns the subsolar point, or location on Earth at which the sun is directly overhead.
  * @param date Luxon DateTime object.
+ * @param geocentric If false (default), outputs geodetic latitude. If true, outputs geocentric latitude
  * @returns [latitude, longitude] of subsolar point
  */
-export function subsolarPoint(date = DateTime.now().toUTC()) {
+export function subsolarPoint(date = DateTime.now().toUTC(), geocentric = false) {
     const JC = jCentury(date);
-    const subsolarLat = declination(JC);
+    const subsolarLat = geocentric ? declination(JC) : geocentric2geodetic(declination(JC));
     const soltime0 = mins(date.toUTC()) + equationOfTime(JC); // solar time at Greenwich meridian (longitude 0)
     const subsolarLong = mod(-soltime0 / 4, 360) - 180;
     return [subsolarLat, subsolarLong];
 }
 /**
  * Returns sun position given latitude, longitude, and DateTime.
- * @param lat Latitude in degrees
+ * @param lat Latitude in degrees (geodetic)
  * @param long Longitude in degrees
  * @param date Luxon DateTime object
  * @returns Array: [elevation, azimuth]. Elevation is in degrees above horizon, azimuth is degrees clockwise from north
  * Solar elevation is not refracted. To find the solar elevation angle adjusted for atmospheric refraction, use refract(sunPosition[0])
  */
 export function sunPosition(lat, long, date) {
-    const subsolarPt = subsolarPoint(date);
-    const sunLat = subsolarPt[0] * degToRad;
-    const sunLong = subsolarPt[1] * degToRad;
-    lat *= degToRad;
-    long *= degToRad;
-    const c = clamp(Math.sin(lat) * Math.sin(sunLat) + Math.cos(lat) * Math.cos(sunLat) * Math.cos(sunLong - long));
-    const elev = 90 - Math.acos(c) / degToRad;
-    const x = Math.cos(lat) * Math.sin(sunLat) - Math.sin(lat) * Math.cos(sunLat) * Math.cos(sunLong - long);
-    const y = Math.sin(sunLong - long) * Math.cos(sunLat);
-    const az = mod(Math.atan2(y, x) / degToRad, 360);
-    return [elev, az];
+    const [sunLat, sunLong] = subsolarPoint(date, true); // geocentric subsolar point
+    const sunEcef = toEcef(sunLat, sunLong, sunDistance(date));
+    return elevAzimuth(lat, long, sunEcef);
 }
 /**
  * The number of degrees by which the sun's apparent elevation increases due to atmospheric refraction.
@@ -399,8 +411,8 @@ export function dawn(lat, long, date, angle, type) {
                     t1 = avg;
                 }
             }
-            const sunPos = sunPosition(lat, long, t0);
-            dawnTimes.push(new SunTime(t0, sunPos[0], sunPos[1], type));
+            const [elev, az] = sunPosition(lat, long, t0);
+            dawnTimes.push(new SunTime(t0, elev, az, type));
         }
     }
     return dawnTimes;
@@ -431,8 +443,8 @@ export function dusk(lat, long, date, angle, type) {
                     t0 = avg;
                 }
             }
-            const sunPos = sunPosition(lat, long, t0);
-            duskTimes.push(new SunTime(t0, sunPos[0], sunPos[1], type));
+            const [elev, az] = sunPosition(lat, long, t0);
+            duskTimes.push(new SunTime(t0, elev, az, type));
         }
     }
     return duskTimes;

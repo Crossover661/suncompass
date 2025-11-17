@@ -1,6 +1,6 @@
 import { DateTime, Duration } from "luxon";
 import {find} from "geo-tz";
-import * as suncalc from "./suncalc.js";
+import * as sc from "./suncalc.js";
 import SunTime from "./SunTime.js";
 import {direction} from "./mathfuncs.js";
 
@@ -28,10 +28,10 @@ else if (args.length == 5) {
     [lat, long] = [Number(args[2]), Number(args[3])];
     zone = find(lat, long)[0];
     let curYear = DateTime.now().setZone(zone).year;
-    if (args[4] == "me") {date = suncalc.getSolstEq(curYear, zone).marEquinox;}
-    else if (args[4] == "js") {date = suncalc.getSolstEq(curYear, zone).junSolstice;}
-    else if (args[4] == "se") {date = suncalc.getSolstEq(curYear, zone).sepEquinox;}
-    else if (args[4] == "ds") {date = suncalc.getSolstEq(curYear, zone).decSolstice;}
+    if (args[4] == "me") {date = sc.getSolstEq(curYear, zone).marEquinox;}
+    else if (args[4] == "js") {date = sc.getSolstEq(curYear, zone).junSolstice;}
+    else if (args[4] == "se") {date = sc.getSolstEq(curYear, zone).sepEquinox;}
+    else if (args[4] == "ds") {date = sc.getSolstEq(curYear, zone).decSolstice;}
     else if (args[4] != "continuous") {date = DateTime.fromISO(args[4], {zone: zone});}
 }
 else {
@@ -41,10 +41,10 @@ else {
 
 // Print subsolar point, sun's apparent elevation, and solar noon/midnight/sunrise/sunset/twilight times.
 function printSunInfo(lat, long, zone, date) {
-    let subsolarPoint = suncalc.subsolarPoint(date);
-    let [elev, az] = suncalc.sunPosition(lat, long, date);
-    let apparentElev = suncalc.refract(elev);
-    let dist = suncalc.sunDistance(date);
+    let subsolarPoint = sc.subsolarPoint(date);
+    let [elev, az] = sc.sunPosition(lat, long, date);
+    let apparentElev = sc.refract(elev);
+    let dist = sc.sunDistance(date);
 
     process.stdout.write(`\r${zone}\n`);
     process.stdout.write(`\r${date.toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS)}\n`);
@@ -54,12 +54,12 @@ function printSunInfo(lat, long, zone, date) {
     process.stdout.write(`\rSun-earth distance: ${dist.toFixed(0)} km (${(dist/1.609344).toFixed(0)} mi)\n`);
 
     // Print day length
-    let dayLength = Math.round(suncalc.dayLength(lat, long, date));
+    let dayLength = Math.round(sc.dayLength(lat, long, date));
     if (dayLength == -1) {process.stdout.write("\rDay length: undefined\n");}
     else {process.stdout.write(`\rDay length: ${Duration.fromObject({seconds: dayLength}).toFormat("h:mm:ss")}\n\r\n`);}
 
     // Print sunrise, sunset, solar noon, solar midnight, and twilight times
-    let solarEvents = suncalc.allSunEvents(lat, long, date);
+    let solarEvents = sc.allSunEvents(lat, long, date);
     process.stdout.write(`\r         Event |        Time | Elevation |       Bearing\n`); // header
     for (let event of solarEvents) {
         let bold = false;

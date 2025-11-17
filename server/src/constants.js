@@ -2,6 +2,12 @@
 // calculation of the sun and moon positions.
 /** The number of radians in a degree, or the factor to multiply by when converting an angle from degrees to radians. */
 export const degToRad = Math.PI / 180;
+/** Earth's equatorial radius in kilometers (WGS84 ellipsoid) */
+export const earthERadius = 6378.137;
+/** Earth's polar radius in kilometers (WGS84 ellipsoid) */
+export const earthPRadius = 6356.7523142;
+/** Flattening of the WGS84 ellipsoid */
+export const flattening = (earthERadius - earthPRadius) / earthERadius;
 // The following periodic terms are adopted from the book "Planetary Programs and Tables from -4000 to +2800".
 export const sunPeriodicTerms = [
     [403406, 0, 4.721964, 1.621043],

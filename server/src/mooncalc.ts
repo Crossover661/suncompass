@@ -1,9 +1,10 @@
 /** Formulas derived from "Astronomical Algorithms" by Jean Meeus. */
 
-import {clamp, mod, jCentury} from "./mathfuncs.js";
-import {meanSunAnomaly, longNutation} from "./suncalc.js";
+import {clamp, mod, jCentury, rotateZ, latLongEcef, elevAzimuth} from "./mathfuncs.js";
+import {meanSunAnomaly, longNutation, obliquity, gast} from "./suncalc.js";
 import {DateTime} from "luxon";
-import {degToRad, moonPtl, moonPtld} from "./constants.js";
+import {degToRad, earthERadius, flattening, moonPtl, moonPtld} from "./constants.js";
+import { couldStartTrivia } from "../../node_modules/typescript/lib/typescript.js";
 
 export function moonMeanLongitude(JC: number) {
     return mod(218.3164591 + 481267.88134236*JC - 0.0013268*JC**2 + JC**3/538841 - JC**4/65194000, 360);
@@ -85,12 +86,13 @@ function deltaL(JC: number) {
 
 /** Variations in latitude due to the actions of Venus, Jupiter, and the flattening of Earth. */
 function deltaB(JC: number) {
-    const [a1, a2, a3] = a(JC);
-    const meanLong = moonMeanLongitude(JC);
-    const meanAnomaly = moonMeanAnomaly(JC);
-    const argLat = moonArgLat(JC);
-    return -2235*Math.sin(meanLong*degToRad) + 382*Math.sin(a3*degToRad) + 175*Math.sin((a1-argLat)*degToRad) +
-    175*Math.sin((a1+argLat)*degToRad) + 127*Math.sin((meanLong-meanAnomaly)*degToRad) - 115*Math.sin((meanLong+meanAnomaly)*degToRad);
+    let [a1, a2, a3] = a(JC);
+    a1 *= degToRad; a2 *= degToRad; a3 *= degToRad;
+    const meanLong = moonMeanLongitude(JC) * degToRad;
+    const meanAnomaly = moonMeanAnomaly(JC) * degToRad;
+    const argLat = moonArgLat(JC) * degToRad;
+    return -2235*Math.sin(meanLong) + 382*Math.sin(a3) + 175*Math.sin(a1-argLat) +
+    175*Math.sin(a1+argLat) + 127*Math.sin(meanLong-meanAnomaly) - 115*Math.sin(meanLong+meanAnomaly);
 }
 
 /** Returns the ecliptic latitude and longitude of the moon. Return value is an array: [latitude, longitude], 
@@ -107,13 +109,59 @@ export function moonLatLong(date: number | DateTime) {
 }
 
 /** Distance from center of earth to center of moon, in kilometers. */
-export function moonEarthDistanceKM(date: number | DateTime) {
+export function moonDistance(date: number | DateTime) {
     if (typeof(date) == "number") {return 385000.56 + r(date)/1000;}
-    else {return moonEarthDistanceKM(jCentury(date));}
+    else {return moonDistance(jCentury(date));}
 }
 
-/** Equatorial horizontal parallax of the moon, in degrees. */
-export function moonParallax(date: number | DateTime) {
-    if (typeof(date) == "number") {return Math.asin(6378.14 / moonEarthDistanceKM(date)) / degToRad;}
-    else {return moonParallax(jCentury(date));}
+/** Returns the rectangular coordinates [x, y, z] in Earth-centered, Earth-fixed coordinates (ECEF) in kilometers. */
+export function moonEcef(date: DateTime) {
+    let [eLat, eLong] = moonLatLong(date);
+    const ob = obliquity(date) * degToRad;
+    eLat *= degToRad; eLong *= degToRad;
+    const [sinB,cosB,sinL,cosL,sinE,cosE] = [Math.sin(eLat),Math.cos(eLat),Math.sin(eLong),Math.cos(eLong),Math.sin(ob),Math.cos(ob)];
+    
+    // xq, yq, zq are geocentric equatorial (Earth-centered inertial) coordinates
+    const dist = moonDistance(date);
+    const xeci = dist * cosB * cosL;
+    const yeci = dist * (cosB * sinL * cosE - sinB * sinE);
+    const zeci = dist * (cosB * sinL * sinE + sinB * cosE);
+
+    // convert to ECEF coordinates
+    const rectCoords = rotateZ(xeci, yeci, zeci, -gast(date));
+    return rectCoords;
+}
+
+/** Returns the sublunar point [latitude, longitude].
+ * The latitude is given as geodetic latitude.
+ */
+export function sublunarPoint(date: DateTime) {
+    const [xecef, yecef, zecef] = moonEcef(date);
+
+    // reduce ECEF to unit direction vector
+    const r = Math.hypot(xecef, yecef, zecef);
+    const [ux, uy, uz] = [xecef/r, yecef/r, zecef/r];
+
+    // convert to point on WGS84 ellipsoid
+    const b = earthERadius * (1-flattening);
+    const k = 1 / Math.sqrt((ux**2 + uy**2) / (earthERadius**2) + (uz**2) / (b**2));
+    const [Xs, Ys, Zs] = [k*ux, k*uy, k*uz];
+
+    // convert point to geodetic latitude/longitude
+    const e2 = 2*flattening - flattening**2;
+    const ep2 = (earthERadius**2 - b**2) / b**2;
+    const p = Math.hypot(Xs, Ys);
+    const th = Math.atan2(earthERadius*Zs, b*p);
+    const long = Math.atan2(Ys, Xs);
+    const lat = Math.atan2(Zs+ep2*b*Math.sin(th)**3, p-e2*earthERadius*Math.cos(th)**3);
+    return [lat/degToRad, mod(long/degToRad+180,360)-180]; // normalize lat/long
+}
+
+export function moonAngularRadius(date: number | DateTime) {
+    return (1737.4 / moonDistance(date)) / degToRad;
+}
+
+/** Returns the moon's position: [elevation, azimuth] in degrees. */
+export function moonPosition(lat: number, long: number, date: DateTime) {
+    return elevAzimuth(lat, long, moonEcef(date));
 }

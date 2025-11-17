@@ -1,5 +1,6 @@
 const degToRad = Math.PI / 180;
 import { DateTime } from 'luxon';
+import { earthERadius, earthPRadius, flattening } from "./constants.js";
 /** Divide x by y, rounding the output to the nearest integer with smaller absolute value. */
 export function intDiv(x, y) {
     if (x < 0) {
@@ -9,6 +10,7 @@ export function intDiv(x, y) {
         return Math.floor(x / y);
     }
 }
+/** Same as the toMillis() method in Luxon, but truncated to the nearest integer. */
 export function ms(date) { return Math.trunc(date.toMillis()); }
 function fractionalYear(t) {
     const y = t.setZone("utc").year;
@@ -109,6 +111,8 @@ export function jCentury(date) {
     const millis = ms(date) - ms(epoch) + deltaT;
     return millis / 3.15576e12; // There are 3.15576e12 milliseconds in a Julian century.
 }
+/** Calculates Julian day from Luxon DateTime. */
+export function jdUTC(date) { return ms(date) / 86400000 + 2440587.5; }
 /**
  * Returns the compass point (ex: NE, SSW) given a compass bearing in degrees.
  * @param bearing Compass bearing, in degrees clockwise from north.
@@ -237,4 +241,74 @@ export function toFixedS(n, precision) {
     else {
         return n.toFixed(precision).replace(/\.?0+$/, "");
     }
+}
+/** Rotate x, y, z around z-axis by theta degrees using right hand rule.
+ * Used to convert ECI coordinates to ECEF. Returns an array [x, y, z]
+ */
+export function rotateZ(x, y, z, theta) {
+    const [cosT, sinT] = [Math.cos(theta * degToRad), Math.sin(theta * degToRad)];
+    const x2 = x * cosT - y * sinT;
+    const y2 = x * sinT + y * cosT;
+    return [x2, y2, z];
+}
+/** Converts geodetic latitude and longitude to rectangular ECEF coordinates in km: [x, y, z] */
+export function latLongEcef(lat, long) {
+    const e2 = 2 * flattening - flattening ** 2;
+    lat *= degToRad;
+    long *= degToRad;
+    const [sinLat, cosLat, sinLong, cosLong] = [Math.sin(lat), Math.cos(lat), Math.sin(long), Math.cos(long)];
+    const N = earthERadius / Math.sqrt(1 - e2 * sinLat ** 2); // radius of curvature in prime vertical
+    const [X, Y, Z] = [N * cosLat * cosLong, N * cosLat * sinLong, N * (1 - e2) * sinLat]; // observer's ECEF coords
+    return [X, Y, Z];
+}
+/** Converts geocentric latitude (lat) to geodetic latitude. When giving geographic coordinates, latitude is always
+ * given as geodetic.
+*/
+export function geocentric2geodetic(lat) {
+    const e2 = 1 - (earthPRadius / earthERadius) ** 2;
+    return Math.atan(Math.tan(lat * degToRad) / (1 - e2)) / degToRad;
+}
+/** Converts geodetic latitude (lat) to geocentric latitude. When giving geographic coordinates, latitude is always
+ * given as geodetic.
+*/
+export function geodetic2geocentric(lat) {
+    const e2 = 1 - (earthPRadius / earthERadius) ** 2;
+    return Math.atan(Math.tan(lat * degToRad) * (1 - e2)) / degToRad;
+}
+/** Converts geocentric latitude, longitude, and distance (in kilometers) to rectangular ECEF coordinates.
+ * @param lat Geocentric latitude. (To convert from geodetic, use geodetic2geocentric)
+ * @param long Longitude.
+ * @param dist Distance from Earth's center in kilometers.
+ * @returns ECEF coordinate array: [x, y, z]
+ */
+export function toEcef(lat, long, dist) {
+    lat *= degToRad;
+    long *= degToRad;
+    const [cosLat, sinLat, cosLong, sinLong] = [Math.cos(lat), Math.sin(lat), Math.cos(long), Math.sin(long)];
+    const [x, y, z] = [dist * cosLat * cosLong, dist * cosLat * sinLong, dist * sinLat];
+    return [x, y, z];
+}
+/** Given the geodetic latitude and longitude of an observer, and the ECEF coordinates of a celestial object, find the
+ * elevation and azimuth of the object.
+ * @param lat Geodetic latitude of observer.
+ * @param long Longitude of observer.
+ * @param ecef ECEF coordinates of celestial object (planet, moon, star).
+ * @returns [elevation, azimuth] of celestial object as seen from observer. Both are given in degrees. Elevation is in degrees
+ * above the horizon, and azimuth is in degrees clockwise from north (range 0 <= a < 360).
+ */
+export function elevAzimuth(lat, long, ecef) {
+    const [xe, ye, ze] = ecef; // celestial body's ECEF
+    const [xo, yo, zo] = latLongEcef(lat, long); // observer's ECEF
+    const [dx, dy, dz] = [xe - xo, ye - yo, ze - zo];
+    // rotate ECEF coordinates to local ENU (east, north, up) at observer
+    const [latR, longR] = [lat * degToRad, long * degToRad];
+    const [sinLat, cosLat, sinLong, cosLong] = [Math.sin(latR), Math.cos(latR), Math.sin(longR), Math.cos(longR)];
+    const E = -sinLong * dx + cosLong * dy;
+    const N = -sinLat * cosLong * dx - sinLat * sinLong * dy + cosLat * dz;
+    const U = cosLat * cosLong * dx + cosLat * sinLong * dy + sinLat * dz;
+    // convert ENU to elevation and azimuth
+    const R = Math.hypot(E, N, U);
+    const elev = Math.asin(clamp(U / R)) / degToRad; // elevation above horizon
+    const az = mod(Math.atan2(E, N) / degToRad, 360); // degrees clockwise from north
+    return [elev, az];
 }
