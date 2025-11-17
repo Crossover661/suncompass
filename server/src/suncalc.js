@@ -315,6 +315,8 @@ export function subsolarPoint(date = DateTime.now().toUTC()) {
 export function sunPosition(lat, long, date, ecefO) {
     const [sunLat, sunLong] = subsolarPoint(date);
     const sunEcef = toEcef(sunLat, sunLong, sunDistance(date));
+    /* Note: Geodetic latitude of subsolar point is the same as geocentric latitude at which the sun-Earth line intersects the
+    ellipsoid. Subsolar point is where the surface normal intersects the sun. */
     if (ecefO === undefined) {
         return elevAzimuth(lat, long, latLongEcef(lat, long), sunEcef);
     }
