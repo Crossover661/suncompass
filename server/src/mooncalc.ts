@@ -132,29 +132,13 @@ export function moonEcef(date: DateTime) {
     return rectCoords;
 }
 
-/** Returns the sublunar point [latitude, longitude].
- * The latitude is given as geodetic latitude.
- */
+/** Returns the sublunar point [latitude, longitude], where the moon is directly overhead. */
 export function sublunarPoint(date: DateTime) {
     const [xecef, yecef, zecef] = moonEcef(date);
-
-    // reduce ECEF to unit direction vector
     const r = Math.hypot(xecef, yecef, zecef);
-    const [ux, uy, uz] = [xecef/r, yecef/r, zecef/r];
-
-    // convert to point on WGS84 ellipsoid
-    const b = earthERadius * (1-flattening);
-    const k = 1 / Math.sqrt((ux**2 + uy**2) / (earthERadius**2) + (uz**2) / (b**2));
-    const [Xs, Ys, Zs] = [k*ux, k*uy, k*uz];
-
-    // convert point to geodetic latitude/longitude
-    const e2 = 2*flattening - flattening**2;
-    const ep2 = (earthERadius**2 - b**2) / b**2;
-    const p = Math.hypot(Xs, Ys);
-    const th = Math.atan2(earthERadius*Zs, b*p);
-    const long = Math.atan2(Ys, Xs);
-    const lat = Math.atan2(Zs+ep2*b*Math.sin(th)**3, p-e2*earthERadius*Math.cos(th)**3);
-    return [lat/degToRad, mod(long/degToRad+180,360)-180]; // normalize lat/long
+    const [ux, uy, uz] = [xecef / r, yecef / r, zecef / r];
+    const [lat, lon] = [Math.asin(clamp(uz)), Math.atan2(uy, ux)]; // radians
+    return [lat / degToRad, mod(lon / degToRad + 180, 360) - 180];
 }
 
 export function moonAngularRadius(date: number | DateTime) {
