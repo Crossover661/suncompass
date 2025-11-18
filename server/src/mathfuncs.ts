@@ -240,7 +240,7 @@ export function toEcef(lat: number, long: number, dist: number): number[] {
     return [x, y, z];
 }
 
-/** Given the geodetic latitude and longitude of an observer, and the ECEF coordinates of a celestial object, find the
+/** Given the geodetic latitude, longitude, and ECEF of an observer, and the ECEF coordinates of a celestial object, find the
  * elevation and azimuth of the object.
  * @param lat Geodetic latitude of observer.
  * @param long Longitude of observer.

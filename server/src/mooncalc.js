@@ -1,149 +1,143 @@
 /** Formulas derived from "Astronomical Algorithms" by Jean Meeus. */
-
-import {clamp, mod, jCentury, rotateZ, latLongEcef, elevAzimuth} from "./mathfuncs.js";
-import {meanSunAnomaly, longNutation, obliquity, gast} from "./suncalc.js";
-import {DateTime} from "luxon";
-import {degToRad, earthERadius, flattening, moonPtl, moonPtld} from "./constants.js";
-
-export function moonMeanLongitude(JC: number) {
-    return mod(218.3164591 + 481267.88134236*JC - 0.0013268*JC**2 + JC**3/538841 - JC**4/65194000, 360);
+import { clamp, mod, jCentury, rotateZ, latLongEcef, elevAzimuth } from "./mathfuncs.js";
+import { meanSunAnomaly, longNutation, obliquity, gast } from "./suncalc.js";
+import { degToRad, moonPtl, moonPtld } from "./constants.js";
+export function moonMeanLongitude(JC) {
+    return mod(218.3164591 + 481267.88134236 * JC - 0.0013268 * JC ** 2 + JC ** 3 / 538841 - JC ** 4 / 65194000, 360);
 }
-
-export function moonMeanElongation(JC: number) {
-    return mod(297.8502042 + 445267.1115168*JC - 0.00163*JC**2 + JC**3/545868 - JC**4/113065000, 360);
+export function moonMeanElongation(JC) {
+    return mod(297.8502042 + 445267.1115168 * JC - 0.00163 * JC ** 2 + JC ** 3 / 545868 - JC ** 4 / 113065000, 360);
 }
-
-export function moonMeanAnomaly(JC: number) {
-    return mod(134.9634114 + 477198.8676313*JC + 0.008997*JC**2 + JC**3/69699 - JC**4/14712000, 360);
+export function moonMeanAnomaly(JC) {
+    return mod(134.9634114 + 477198.8676313 * JC + 0.008997 * JC ** 2 + JC ** 3 / 69699 - JC ** 4 / 14712000, 360);
 }
-
 /** Moon argument of latitude */
-export function moonArgLat(JC: number) {
-    return mod(93.2720993 + 483202.0175273*JC - 0.0034029*JC**2 - JC**3/3526000 + JC**4/863310000, 360);
+export function moonArgLat(JC) {
+    return mod(93.2720993 + 483202.0175273 * JC - 0.0034029 * JC ** 2 - JC ** 3 / 3526000 + JC ** 4 / 863310000, 360);
 }
-
 /** Sum of all longitude terms in moonPtld (periodic terms for longitude and distance) */
-function l(JC: number) {
+function l(JC) {
     let l = 0;
     const D = moonMeanElongation(JC);
     const M = meanSunAnomaly(JC);
     const Mp = moonMeanAnomaly(JC);
     const F = moonArgLat(JC);
-    const E = 1 - 0.002516*JC - 7.4e-6*JC**2;
-    for (let i=0; i<moonPtld.length; i++) {
+    const E = 1 - 0.002516 * JC - 7.4e-6 * JC ** 2;
+    for (let i = 0; i < moonPtld.length; i++) {
         const curRow = moonPtld[i];
-        let curSum = curRow[4] * Math.sin((curRow[0]*D + curRow[1]*M + curRow[2]*Mp + curRow[3]*F)*degToRad);
+        let curSum = curRow[4] * Math.sin((curRow[0] * D + curRow[1] * M + curRow[2] * Mp + curRow[3] * F) * degToRad);
         curSum *= (E ** Math.abs(curRow[1])); // Multiply terms which contain -M or M by E, and terms which contain 2M or -2M by E^2.
         l += curSum;
     }
     return l;
 }
-
 /** Sum of all distance terms in moonPtld (periodic terms for longitude and distance) */
-function r(JC: number) {
+function r(JC) {
     let r = 0;
     const D = moonMeanElongation(JC);
     const M = meanSunAnomaly(JC);
     const Mp = moonMeanAnomaly(JC);
     const F = moonArgLat(JC);
-    const E = 1 - 0.002516*JC - 7.4e-6*JC**2;
-    for (let i=0; i<moonPtld.length; i++) {
+    const E = 1 - 0.002516 * JC - 7.4e-6 * JC ** 2;
+    for (let i = 0; i < moonPtld.length; i++) {
         const curRow = moonPtld[i];
-        let curSum = curRow[5] * Math.cos((curRow[0]*D + curRow[1]*M + curRow[2]*Mp + curRow[3]*F)*degToRad);
+        let curSum = curRow[5] * Math.cos((curRow[0] * D + curRow[1] * M + curRow[2] * Mp + curRow[3] * F) * degToRad);
         curSum *= (E ** Math.abs(curRow[1])); // Multiply terms which contain -M or M by E, and terms which contain 2M or -2M by E^2.
         r += curSum;
     }
     return r;
 }
-
 /** Sum of all latitude terms in moonPtl (periodic terms for latitude) */
-function b(JC: number) {
+function b(JC) {
     let b = 0;
     const D = moonMeanElongation(JC);
     const M = meanSunAnomaly(JC);
     const Mp = moonMeanAnomaly(JC);
     const F = moonArgLat(JC);
-    const E = 1 - 0.002516*JC - 7.4e-6*JC**2;
-    for (let i=0; i<moonPtl.length; i++) {
+    const E = 1 - 0.002516 * JC - 7.4e-6 * JC ** 2;
+    for (let i = 0; i < moonPtl.length; i++) {
         const curRow = moonPtl[i];
-        let curSum = curRow[4] * Math.sin((curRow[0]*D + curRow[1]*M + curRow[2]*Mp + curRow[3]*F)*degToRad);
+        let curSum = curRow[4] * Math.sin((curRow[0] * D + curRow[1] * M + curRow[2] * Mp + curRow[3] * F) * degToRad);
         curSum *= (E ** Math.abs(curRow[1])); // Multiply terms which contain -M or M by E, and terms which contain 2M or -2M by E^2.
         b += curSum;
     }
     return b;
 }
-
-function a(JC: number) {
-    return [119.75 + 131.849*JC, 53.09 + 479264.29*JC, 313.45 + 481266.484*JC];
+function a(JC) {
+    return [119.75 + 131.849 * JC, 53.09 + 479264.29 * JC, 313.45 + 481266.484 * JC];
 }
-
 /** Variations in longitude due to the actions of Venus, Jupiter, and the flattening of Earth. */
-function deltaL(JC: number) {
+function deltaL(JC) {
     const [a1, a2, a3] = a(JC);
-    return 3958*Math.sin(a1*degToRad) + 1962*Math.sin((moonMeanLongitude(JC)-moonArgLat(JC))*degToRad) + 318*Math.sin(a2*degToRad);
+    return 3958 * Math.sin(a1 * degToRad) + 1962 * Math.sin((moonMeanLongitude(JC) - moonArgLat(JC)) * degToRad) + 318 * Math.sin(a2 * degToRad);
 }
-
 /** Variations in latitude due to the actions of Venus, Jupiter, and the flattening of Earth. */
-function deltaB(JC: number) {
+function deltaB(JC) {
     let [a1, a2, a3] = a(JC);
-    a1 *= degToRad; a2 *= degToRad; a3 *= degToRad;
+    a1 *= degToRad;
+    a2 *= degToRad;
+    a3 *= degToRad;
     const meanLong = moonMeanLongitude(JC) * degToRad;
     const meanAnomaly = moonMeanAnomaly(JC) * degToRad;
     const argLat = moonArgLat(JC) * degToRad;
-    return -2235*Math.sin(meanLong) + 382*Math.sin(a3) + 175*Math.sin(a1-argLat) +
-    175*Math.sin(a1+argLat) + 127*Math.sin(meanLong-meanAnomaly) - 115*Math.sin(meanLong+meanAnomaly);
+    return -2235 * Math.sin(meanLong) + 382 * Math.sin(a3) + 175 * Math.sin(a1 - argLat) +
+        175 * Math.sin(a1 + argLat) + 127 * Math.sin(meanLong - meanAnomaly) - 115 * Math.sin(meanLong + meanAnomaly);
 }
-
-/** Returns the ecliptic latitude and longitude of the moon. Return value is an array: [latitude, longitude], 
+/** Returns the ecliptic latitude and longitude of the moon. Return value is an array: [latitude, longitude],
  * both measured in degrees. */
-export function moonLatLong(date: number, unix = false) {
+export function moonLatLong(date, unix = false) {
     if (!unix) {
-        let long = moonMeanLongitude(date) + (l(date)+deltaL(date))/1e6 + longNutation(date);
-        let lat = (b(date) + deltaB(date))/1e6;
+        let long = moonMeanLongitude(date) + (l(date) + deltaL(date)) / 1e6 + longNutation(date);
+        let lat = (b(date) + deltaB(date)) / 1e6;
         lat = clamp(lat, -90, 90);
         long = mod(long, 360);
         return [lat, long];
     }
-    else {return moonLatLong(jCentury(date));}
+    else {
+        return moonLatLong(jCentury(date));
+    }
 }
-
 /** Distance from center of earth to center of moon, in kilometers. */
-export function moonDistance(date: number, unix = false) {
-    if (!unix) {return 385000.56 + r(date)/1000;}
-    else {return moonDistance(jCentury(date));}
+export function moonDistance(date, unix = false) {
+    if (!unix) {
+        return 385000.56 + r(date) / 1000;
+    }
+    else {
+        return moonDistance(jCentury(date));
+    }
 }
-
 /** Returns the rectangular coordinates [x, y, z] in Earth-centered, Earth-fixed coordinates (ECEF) in kilometers. */
-export function moonEcef(unix: number) {
+export function moonEcef(unix) {
     let [eLat, eLong] = moonLatLong(unix, true);
     const ob = obliquity(unix, true) * degToRad;
-    eLat *= degToRad; eLong *= degToRad;
-    const [sinB,cosB,sinL,cosL,sinE,cosE] = [Math.sin(eLat),Math.cos(eLat),Math.sin(eLong),Math.cos(eLong),Math.sin(ob),Math.cos(ob)];
-    
+    eLat *= degToRad;
+    eLong *= degToRad;
+    const [sinB, cosB, sinL, cosL, sinE, cosE] = [Math.sin(eLat), Math.cos(eLat), Math.sin(eLong), Math.cos(eLong), Math.sin(ob), Math.cos(ob)];
     // xq, yq, zq are geocentric equatorial (Earth-centered inertial) coordinates
     const dist = moonDistance(unix, true);
     const xeci = dist * cosB * cosL;
     const yeci = dist * (cosB * sinL * cosE - sinB * sinE);
     const zeci = dist * (cosB * sinL * sinE + sinB * cosE);
-
     // convert to ECEF coordinates
     const rectCoords = rotateZ(xeci, yeci, zeci, -gast(unix));
     return rectCoords;
 }
-
 /** Returns the sublunar point [latitude, longitude], where the moon is directly overhead. */
-export function sublunarPoint(unix: number) {
+export function sublunarPoint(unix) {
     const [xecef, yecef, zecef] = moonEcef(unix);
     const r = Math.hypot(xecef, yecef, zecef);
     const [ux, uy, uz] = [xecef / r, yecef / r, zecef / r];
     const [lat, lon] = [Math.asin(clamp(uz)), Math.atan2(uy, ux)]; // radians
     return [lat / degToRad, mod(lon / degToRad + 180, 360) - 180];
 }
-
 /** Returns the moon's position: [elevation, azimuth] in degrees. Optionally, the observer's ECEF can be specified in order
  * to avoid repeatedly computing it.
 */
-export function moonPosition(lat: number, long: number, unix: number, ecefO?: number[]) {
-    if (ecefO === undefined) {return elevAzimuth(lat, long, latLongEcef(lat, long), moonEcef(unix));}
-    else {return elevAzimuth(lat, long, ecefO, moonEcef(unix));}
+export function moonPosition(lat, long, unix, ecefO) {
+    if (ecefO === undefined) {
+        return elevAzimuth(lat, long, latLongEcef(lat, long), moonEcef(unix));
+    }
+    else {
+        return elevAzimuth(lat, long, ecefO, moonEcef(unix));
+    }
 }

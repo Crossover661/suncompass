@@ -54,8 +54,8 @@ function printSunInfo(lat, long, zone, date, ecef) {
     process.stdout.write(`\rSun-earth distance: ${dist.toFixed(0)} km (${(dist/1.609344).toFixed(0)} mi)\n`);
 
     // Print day length
-    const dayLength = Math.round(sc.dayLength(lat, long, date, ecef));
-    if (dayLength == -1) {process.stdout.write("\rDay length: undefined\n");}
+    const dayLength = -1; // placeholder
+    if (dayLength == -1) {process.stdout.write("\rDay length: undefined\n\r\n");}
     else {process.stdout.write(`\rDay length: ${Duration.fromObject({seconds: dayLength}).toFormat("h:mm:ss")}\n\r\n`);}
 
     // Print sunrise, sunset, solar noon, solar midnight, and twilight times
