@@ -5,7 +5,7 @@ import {ms} from "./mathfuncs.js";
 import {find} from "geo-tz";
 
 const [lat, long] = [34.42, -119.85];
-const date = DateTime.fromISO("2025-06-21T02:42:07", {zone: "utc"});
+const date = DateTime.now().setZone("America/Los_Angeles");
 console.log(date.toISO());
 const unix = ms(date);
 const [moonLat, moonLong] = mc.sublunarPoint(unix);
