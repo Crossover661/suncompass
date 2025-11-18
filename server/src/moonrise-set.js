@@ -5,10 +5,11 @@ import {ms} from "./mathfuncs.js";
 import {find} from "geo-tz";
 
 const [lat, long] = [34.42, -119.85];
-const date = ms(DateTime.fromISO("2025-06-21T02:42:07", {zone: "utc"}));
+const date = DateTime.fromISO("2025-06-21T02:42:07", {zone: "utc"});
 console.log(date.toISO());
-const [moonLat, moonLong] = mc.sublunarPoint(date);
-const [elev, az] = mc.moonPosition(lat, long, date);
+const unix = ms(date);
+const [moonLat, moonLong] = mc.sublunarPoint(unix);
+const [elev, az] = mc.moonPosition(lat, long, unix);
 const elevR = refract(elev);
 
 console.log(`Sublunar point: ${moonLat.toFixed(4)}, ${moonLong.toFixed(4)}`);
