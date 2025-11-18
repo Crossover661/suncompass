@@ -7,11 +7,11 @@
 import SunTime from "./SunTime.js";
 import {clamp, convertToMS, isCollinear, toFixedS} from "./mathfuncs.js";
 import {intervalsSvg, lengths, getSolstEq} from "./suncalc.js";
+import {DAY_LENGTH} from "./constants.js"
 import {DateTime} from "luxon";
 
 const svgClose = "</svg>";
 const sunColors = ["#80c0ff", "#0060c0", "#004080", "#002040", "#000000"];
-const DAY_LENGTH = 86400000; // milliseconds in a day
 
 /** Generates the opening of an SVG */
 function svgOpen(width: number, height: number) {

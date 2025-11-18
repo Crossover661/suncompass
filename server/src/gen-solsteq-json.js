@@ -12,10 +12,7 @@ const data = [];
 
 const [startYear, endYear] = [0, 2500];
 for (let year=startYear; year<=endYear; year++) {
-    const me = calcSolstEq(year, 3).toISO();
-    const js = calcSolstEq(year, 6).toISO();
-    const se = calcSolstEq(year, 9).toISO();
-    const ds = calcSolstEq(year, 12).toISO();
+    const [me, js, se, ds] = [calcSolstEq(year, 3), calcSolstEq(year, 6), calcSolstEq(year, 9), calcSolstEq(year, 12)];
     const obj = {year: year, marEquinox: me, junSolstice: js, sepEquinox: se, decSolstice: ds};
     data.push(obj);
 }

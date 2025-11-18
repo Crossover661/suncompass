@@ -1,7 +1,7 @@
 const degToRad = Math.PI/180;
 
 import { DateTime } from 'luxon';
-import {earthERadius, earthPRadius, flattening} from "./constants.js";
+import {DAY_LENGTH, earthERadius, earthPRadius, flattening, J2000UTC} from "./constants.js";
 
 /** Divide x by y, rounding the output to the nearest integer with smaller absolute value. */
 export function intDiv(x: number, y: number) {
@@ -12,15 +12,10 @@ export function intDiv(x: number, y: number) {
 /** Same as the toMillis() method in Luxon, but truncated to the nearest integer. */
 export function ms(date: DateTime) {return Math.trunc(date.toMillis());}
 
-function fractionalYear(t: DateTime) {
-    const y = t.setZone("utc").year;
-    const begin = ms(DateTime.fromISO(`${String(y).padStart(4, "0")}-01-01T00:00:00`, {zone: "utc"}));
-    const end = ms(DateTime.fromISO(`${String(y+1).padStart(4, "0")}-01-01T00:00:00`, {zone: "utc"}));
-    const cur = ms(t);
-    return y + (cur - begin) / (end - begin);
+/** Converts Unix milliseconds to approximate "fractional year" for Delta T calculation. */
+function fractionalYear(t: number) {
+    return t / (365.2425 * 86400 * 1000) + 1970;
 }
-
-export function mins(date: DateTime) {return date.hour*60 + date.minute + date.second/60 + date.millisecond/60000;}
 
 /** This function finds the approximate value of ΔT, which is calculated using the formula ΔT = TT - UT1. 
  * 
@@ -28,8 +23,11 @@ export function mins(date: DateTime) {return date.hour*60 + date.minute + date.s
  * 
  * This function's margin of error is 4.8 seconds in 2024, based on the value this function returns (73.8 seconds) versus the
  * real value (69 seconds). The margin of error increases for years before 1800 and after 2100, as the Earth's rotation 
- * varies unpredictably. */
-export function approxDeltaT(t: DateTime) {
+ * varies unpredictably.
+ * 
+ * Source: https://eclipse.gsfc.nasa.gov/SEhelp/deltatpoly2004.html
+ * @param t Unix time in milliseconds. */
+export function approxDeltaT(t: number) {
     const y = fractionalYear(t);
     if (y < 500) {
         const u = y/100;
@@ -97,21 +95,20 @@ export function clamp(x: number, min=-1, max=1) {
 /** Calculates x modulo y, where the output is in the range [0, y). */
 export function mod(x: number, y: number) {return ((x % y) + y) % y;}
 
-/** Calculates the Julian century number of a Luxon DateTime object, corrected for delta T. 
+/** Calculates the Julian century given the Unix timestamp in milliseconds, corrected for delta T. 
  * Note that there is a maximum error of 1 second due to the difference between UT1 and UTC, known as DUT1.
 */
-export function jCentury(date: DateTime) {
-    let epoch = DateTime.fromISO("2000-01-01T12:00:00", {zone: "utc"});
-    const deltaT0 = Math.round(approxDeltaT(epoch)*1000);
-    epoch = epoch.minus(deltaT0); // epoch = 2000-01-01 at 12:00 TT
+export function jCentury(unix: number) {
+    const deltaT0 = Math.round(approxDeltaT(J2000UTC) * 1000);
+    let epoch = J2000UTC - deltaT0;
 
-    const deltaT = Math.round(approxDeltaT(date)*1000) - deltaT0;
-    const millis = ms(date) - ms(epoch) + deltaT;
+    const deltaT = Math.round(approxDeltaT(unix)*1000) - deltaT0;
+    const millis = unix - epoch + deltaT;
     return millis / 3.15576e12; // There are 3.15576e12 milliseconds in a Julian century.
 }
 
-/** Calculates Julian day from Luxon DateTime. */
-export function jdUTC(date: DateTime) {return ms(date) / 86400000 + 2440587.5;}
+/** Calculates Julian day from Unix milliseconds. */
+export function jdUTC(unix: number) {return unix / DAY_LENGTH + 2440587.5;}
 
 /**
  * Returns the compass point (ex: NE, SSW) given a compass bearing in degrees.

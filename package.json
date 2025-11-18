@@ -15,6 +15,10 @@
     "@types/node": "^20.12.7",
     "express": "^4.19.2",
     "geo-tz": "^8.0.2",
+    "luxon": "^3.7.2",
     "typescript": "^5.4.5"
+  },
+  "devDependencies": {
+    "@types/luxon": "^3.7.1"
   }
 }

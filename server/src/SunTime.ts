@@ -1,14 +1,23 @@
 // SunTime.ts
 
-import {DateTime} from "luxon";
 import {refract} from "./suncalc.js";
-import {direction, ms} from "./mathfuncs.js";
+import {direction, mod, ms} from "./mathfuncs.js";
+import { DateTime } from "luxon";
+import {DAY_LENGTH} from "./constants.js";
 
 export default class SunTime {
+    /** Unix timestamp in milliseconds of this SunTime object. */
     time: DateTime;
+
+    /** Elevation angle of the sun, not accounting for atmospheric refraction. */
     solarElevation: number;
+
+    /** Azimuth or compass bearing angle of the sun. */
     solarAzimuth: number;
-    eventType: string
+
+    /** String representing the type of solar event. Either "Solar Midnight", "Astro Dawn", "Nautical Dawn", 
+     * "Civil Dawn", "Sunrise", "Solar Noon", "Sunset", "Civil Dusk", "Nautical Dusk", or "Astro Dusk". */
+    eventType: string;
 
     /**
      * An object representing the time of a solar event (solar noon, solar midnight, dawn, dusk, sunrise, or sunset)

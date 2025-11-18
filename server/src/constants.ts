@@ -13,6 +13,12 @@ export const earthPRadius = 6356.7523142;
 /** Flattening of the WGS84 ellipsoid */
 export const flattening = (earthERadius - earthPRadius) / earthERadius;
 
+/** The Unix timestamp corresponding to 2000-01-01 at 12:00:00 UTC. */
+export const J2000UTC = 946728000000;
+
+/** Number of milliseconds in 24 hours. */
+export const DAY_LENGTH = 86400000;
+
 // The following periodic terms are adopted from the book "Planetary Programs and Tables from -4000 to +2800".
 export const sunPeriodicTerms = [
     [403406, 0, 4.721964, 1.621043],

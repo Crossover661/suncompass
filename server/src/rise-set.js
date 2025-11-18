@@ -59,7 +59,7 @@ function printSunInfo(lat, long, zone, date, ecef) {
     else {process.stdout.write(`\rDay length: ${Duration.fromObject({seconds: dayLength}).toFormat("h:mm:ss")}\n\r\n`);}
 
     // Print sunrise, sunset, solar noon, solar midnight, and twilight times
-    const solarEvents = sc.allSunEvents(lat, long, date, ecef);
+    const solarEvents = sc.sunEventsDay(lat, long, date, ecef);
     process.stdout.write(`\r         Event |        Time | Elevation |       Bearing\n`); // header
     for (const event of solarEvents) {
         let bold = false;

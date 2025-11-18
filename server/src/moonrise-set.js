@@ -1,11 +1,11 @@
 import * as mc from "./mooncalc.js";
 import {refract, getSolstEq} from "./suncalc.js"
 import {DateTime} from "luxon";
+import {ms} from "./mathfuncs.js";
 import {find} from "geo-tz";
 
 const [lat, long] = [34.42, -119.85];
-const zone = find(lat, long)[0];
-const date = DateTime.fromISO("2025-06-21T02:42:07", {zone: "utc"});
+const date = ms(DateTime.fromISO("2025-06-21T02:42:07", {zone: "utc"}));
 console.log(date.toISO());
 const [moonLat, moonLong] = mc.sublunarPoint(date);
 const [elev, az] = mc.moonPosition(lat, long, date);

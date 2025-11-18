@@ -96,8 +96,8 @@ function deltaB(JC: number) {
 
 /** Returns the ecliptic latitude and longitude of the moon. Return value is an array: [latitude, longitude], 
  * both measured in degrees. */
-export function moonLatLong(date: number | DateTime) {
-    if (typeof(date) == "number") {
+export function moonLatLong(date: number, unix = false) {
+    if (!unix) {
         let long = moonMeanLongitude(date) + (l(date)+deltaL(date))/1e6 + longNutation(date);
         let lat = (b(date) + deltaB(date))/1e6;
         lat = clamp(lat, -90, 90);
@@ -108,46 +108,46 @@ export function moonLatLong(date: number | DateTime) {
 }
 
 /** Distance from center of earth to center of moon, in kilometers. */
-export function moonDistance(date: number | DateTime) {
-    if (typeof(date) == "number") {return 385000.56 + r(date)/1000;}
+export function moonDistance(date: number, unix = false) {
+    if (!unix) {return 385000.56 + r(date)/1000;}
     else {return moonDistance(jCentury(date));}
 }
 
 /** Returns the rectangular coordinates [x, y, z] in Earth-centered, Earth-fixed coordinates (ECEF) in kilometers. */
-export function moonEcef(date: DateTime) {
-    let [eLat, eLong] = moonLatLong(date);
-    const ob = obliquity(date) * degToRad;
+export function moonEcef(unix: number) {
+    let [eLat, eLong] = moonLatLong(unix, true);
+    const ob = obliquity(unix, true) * degToRad;
     eLat *= degToRad; eLong *= degToRad;
     const [sinB,cosB,sinL,cosL,sinE,cosE] = [Math.sin(eLat),Math.cos(eLat),Math.sin(eLong),Math.cos(eLong),Math.sin(ob),Math.cos(ob)];
     
     // xq, yq, zq are geocentric equatorial (Earth-centered inertial) coordinates
-    const dist = moonDistance(date);
+    const dist = moonDistance(unix, true);
     const xeci = dist * cosB * cosL;
     const yeci = dist * (cosB * sinL * cosE - sinB * sinE);
     const zeci = dist * (cosB * sinL * sinE + sinB * cosE);
 
     // convert to ECEF coordinates
-    const rectCoords = rotateZ(xeci, yeci, zeci, -gast(date));
+    const rectCoords = rotateZ(xeci, yeci, zeci, -gast(unix));
     return rectCoords;
 }
 
 /** Returns the sublunar point [latitude, longitude], where the moon is directly overhead. */
-export function sublunarPoint(date: DateTime) {
-    const [xecef, yecef, zecef] = moonEcef(date);
+export function sublunarPoint(unix: number) {
+    const [xecef, yecef, zecef] = moonEcef(unix);
     const r = Math.hypot(xecef, yecef, zecef);
     const [ux, uy, uz] = [xecef / r, yecef / r, zecef / r];
     const [lat, lon] = [Math.asin(clamp(uz)), Math.atan2(uy, ux)]; // radians
     return [lat / degToRad, mod(lon / degToRad + 180, 360) - 180];
 }
 
-export function moonAngularRadius(date: number | DateTime) {
-    return (1737.4 / moonDistance(date)) / degToRad;
+export function moonAngularRadius(unix: number) {
+    return (1737.4 / moonDistance(unix, true)) / degToRad;
 }
 
 /** Returns the moon's position: [elevation, azimuth] in degrees. Optionally, the observer's ECEF can be specified in order
  * to avoid repeatedly computing it.
 */
-export function moonPosition(lat: number, long: number, date: DateTime, ecefO?: number[]) {
-    if (ecefO === undefined) {return elevAzimuth(lat, long, latLongEcef(lat, long), moonEcef(date));}
-    else {return elevAzimuth(lat, long, ecefO, moonEcef(date));}
+export function moonPosition(lat: number, long: number, unix: number, ecefO?: number[]) {
+    if (ecefO === undefined) {return elevAzimuth(lat, long, latLongEcef(lat, long), moonEcef(unix));}
+    else {return elevAzimuth(lat, long, ecefO, moonEcef(unix));}
 }

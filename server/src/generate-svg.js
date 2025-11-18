@@ -1,4 +1,4 @@
-import {allSunEvents, intervals, lengths} from "./suncalc.js";
+import {sunEventsDay, intervals, lengths} from "./suncalc.js";
 import {find} from "geo-tz";
 import {generateSvg} from "./gen-svg.js";
 import { DateTime } from "luxon";
@@ -32,7 +32,7 @@ if (args.length == 5) {year = Number(args[4]);}
 const sunEvents = [];
 let date = DateTime.fromISO(`${year}-01-01`, {zone: timeZone});
 while (date.year == year) {
-    sunEvents.push(allSunEvents(lat, long, date, ecef));
+    sunEvents.push(sunEventsDay(lat, long, date, ecef));
     date = date.plus({days: 1});
 }
 
