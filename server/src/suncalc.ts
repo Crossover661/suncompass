@@ -47,7 +47,7 @@ export function sunGeomLong(date: number, unix = false): number {
         let long = 4.9353929 + 62833.196168*U;
         for (let i=0; i<sunPeriodicTerms.length; i++) {
             const curRow = sunPeriodicTerms[i];
-            long += (1e-7*(curRow[0] * Math.sin(curRow[2]+curRow[3]*U)));
+            long += (1e-7 * curRow[0] * Math.sin(curRow[2]+curRow[3]*U));
         }
         return mf.mod(long / degToRad, 360);
     }
@@ -76,7 +76,7 @@ export function sunDistance(date: number | DateTime, unix = false): number {
             let dist = 1.0001026; // in astronomical units
             for (let i=0; i<sunPeriodicTerms.length; i++) {
                 const curRow = sunPeriodicTerms[i];
-                dist += (1e-7*(curRow[1] * Math.cos(curRow[2]+curRow[3]*U)));
+                dist += (1e-7 * curRow[1] * Math.cos(curRow[2]+curRow[3]*U));
             }
             return 149597870.7 * dist; // convert to kilometers
         }
@@ -318,7 +318,7 @@ export function sunPosition(lat: number, long: number, date: number | DateTime, 
         if (ecefO === undefined) {return mf.elevAzimuth(lat, long, mf.latLongEcef(lat, long), sunEcef);}
         else {return mf.elevAzimuth(lat, long, ecefO, sunEcef);}
     }
-    else {return subsolarPoint(mf.ms(date));}
+    else {return sunPosition(lat, long, mf.ms(date), ecefO);}
 }
 
 /**
