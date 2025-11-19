@@ -3,6 +3,7 @@ import { refract } from "./suncalc.js";
 import * as mf from "./mathfuncs.js";
 import { DateTime } from "luxon";
 import { DAY_LENGTH } from "./constants.js";
+import { getOffsetFromTable } from "./lookup-tables.js";
 export default class SunTime {
     /**
      * An object representing the time of a solar event (solar noon, solar midnight, dawn, dusk, sunrise, or sunset)
@@ -33,7 +34,7 @@ export default class SunTime {
             return dt.millisecond + 1000 * dt.second + 60000 * dt.minute + 3600000 * dt.hour;
         }
         else {
-            const offset = mf.getOffsetFromTable(this.time, timeZone);
+            const offset = getOffsetFromTable(this.time, timeZone);
             const adjustedTimestamp = this.time + offset * 60000;
             return mf.mod(adjustedTimestamp, DAY_LENGTH);
         }

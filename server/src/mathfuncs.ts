@@ -1,14 +1,5 @@
-const degToRad = Math.PI/180;
-
 import { DateTime } from 'luxon';
-import {DAY_LENGTH, earthERadius, earthPRadius, flattening, J2000UTC} from "./constants.js";
-
-/** Object representing the change in a location's time zone. 
- * @param unix: the Unix timestamp at which the change occurs.
- * @param offset: the time zone's new offset, in minutes from UTC
- * @param change: True if the time zone changes, false if it's just the initial time zone for the year.
-*/
-export type TimeChange = {unix: number; offset: number; change: boolean};
+import {DAY_LENGTH, earthERadius, earthPRadius, flattening, J2000UTC, degToRad} from "./constants.js";
 
 /** Divide x by y, rounding the output to the nearest integer with smaller absolute value. */
 export function intDiv(x: number, y: number) {
@@ -218,22 +209,6 @@ export function latLongEcef(lat: number, long: number): number[] {
     return [X, Y, Z];
 }
 
-/** Converts geocentric latitude (lat) to geodetic latitude. When giving geographic coordinates, latitude is always
- * given as geodetic.
-*/
-export function geocentric2geodetic(lat: number): number {
-    const e2 = 1 - (earthPRadius / earthERadius) ** 2;
-    return Math.atan(Math.tan(lat*degToRad) / (1 - e2)) / degToRad;
-}
-
-/** Converts geodetic latitude (lat) to geocentric latitude. When giving geographic coordinates, latitude is always
- * given as geodetic.
-*/
-export function geodetic2geocentric(lat: number): number {
-    const e2 = 1 - (earthPRadius / earthERadius) ** 2;
-    return Math.atan(Math.tan(lat*degToRad) * (1 - e2)) / degToRad;
-}
-
 /** Converts geocentric latitude, longitude, and distance (in kilometers) to rectangular ECEF coordinates.
  * @param lat Geocentric latitude. (To convert from geodetic, use geodetic2geocentric)
  * @param long Longitude.
@@ -289,37 +264,4 @@ export function dayStarts(start: DateTime, end: DateTime): DateTime[] {
         cur = cur.plus({days: 1}).startOf("day");
     }
     return dayStarts;
-}
-
-/** Given the value returned by dayStarts, create a "lookup table" showing when the time offsets change during the given period. */
-export function timeZoneLookupTable(dayStarts: DateTime[]): TimeChange[] {
-    const changeAtStart = (dayStarts[0].offset != dayStarts[0].minus(1).offset);
-    const firstChange: TimeChange = {unix: ms(dayStarts[0]), offset: dayStarts[0].offset, change: changeAtStart};
-    const table: TimeChange[] = [firstChange];
-
-    for (let i=1; i<dayStarts.length; i++) {
-        const prevDay = dayStarts[i-1], curDay = dayStarts[i];
-        if (prevDay.offset != curDay.offset) {
-            // If the time changes during this day, use binary search to find where it changes.
-            let t0 = ms(prevDay), t1 = ms(curDay);
-            while (t1 - t0 > 1) {
-                const avg = Math.floor((t0 + t1)/2);
-                const avgTime = DateTime.fromMillis(avg, {zone: curDay.zone});
-                if (avgTime.offset == prevDay.offset) {t0 = avg;}
-                else {t1 = avg;}
-            }
-            table.push({unix: t1, offset: curDay.offset, change: true});
-        }
-    }
-    return table;
-}
-
-/** Get UTC offset (minutes) from a Unix timestamp and a time zone lookup table (see mathfuncs.timeZoneLookupTable()) */
-export function getOffsetFromTable(unix: number, table: TimeChange[]): number {
-    let offset = 0;
-    for (const change of table) {
-        if (unix >= change.unix) {offset = change.offset;}
-        else {break;}
-    }
-    return offset;
 }

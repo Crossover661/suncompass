@@ -7,6 +7,8 @@
 
 import {DateTime} from "luxon";
 import {subsolarPoint, getSolstEq} from "./suncalc.js";
+import { generateLODProfile } from "./lookup-tables.js";
+import {ms} from "./mathfuncs.js";
 
 let year;
 let zone;
@@ -19,7 +21,12 @@ else {zone = args[3];}
 
 const obj = getSolstEq(year, zone);
 const [mar, jun, sep, dec] = [obj.marEquinox, obj.junSolstice, obj.sepEquinox, obj.decSolstice];
-const [marSSP, junSSP, sepSSP, decSSP] = [subsolarPoint(mar),subsolarPoint(jun),subsolarPoint(sep),subsolarPoint(dec)];
+const [marSSP, junSSP, sepSSP, decSSP] = [
+    subsolarPoint(generateLODProfile(ms(mar))),
+    subsolarPoint(generateLODProfile(ms(jun))),
+    subsolarPoint(generateLODProfile(ms(sep))),
+    subsolarPoint(generateLODProfile(ms(dec)))
+];
 
 console.log("March equinox: " + mar.toFormat("MMM d, y HH:mm:ss ZZZZ"));
 console.log("Subsolar point: " + marSSP[0].toFixed(4) + ", " + marSSP[1].toFixed(4));

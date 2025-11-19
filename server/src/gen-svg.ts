@@ -9,6 +9,7 @@ import * as mf from "./mathfuncs.js";
 import {intervalsSvg, lengths, getSolstEq} from "./suncalc.js";
 import {DAY_LENGTH} from "./constants.js"
 import {DateTime} from "luxon";
+import {TimeChange} from "./lookup-tables.js";
 
 const svgClose = "</svg>";
 const sunColors = ["#80c0ff", "#0060c0", "#004080", "#002040", "#000000"];
@@ -240,7 +241,7 @@ function intervalsToPolygon(intervals: number[][][]): number[][][] {
 export function generateSvg(
     events: SunTime[][],
     type: string,
-    timeZone: string | mf.TimeChange[],
+    timeZone: string | TimeChange[],
     solsticesEquinoxes: DateTime[] = [],
     svgWidth: number = 1100,
     svgHeight: number = 550,

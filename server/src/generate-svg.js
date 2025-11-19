@@ -4,6 +4,7 @@ import {generateSvg} from "./gen-svg.js";
 import { DateTime } from "luxon";
 import fs from "fs";
 import * as mf from "./mathfuncs.js";
+import { timeZoneLookupTable, longDistLookupTable } from "./lookup-tables.js";
 
 const start = performance.now();
 
@@ -34,21 +35,22 @@ const sunEvents = [];
 const startDate = DateTime.fromObject({year: year}, {zone: timeZone});
 const endDate = DateTime.fromObject({year: year+1}, {zone: timeZone});
 const dateList = mf.dayStarts(startDate, endDate);
-const lookupTable = mf.timeZoneLookupTable(dateList);
+const tzLookupTable = timeZoneLookupTable(dateList);
+const lodLookupTable = longDistLookupTable(dateList);
 
 for (let i=0; i<dateList.length-1; i++) {
-    const startTime = mf.ms(dateList[i]), endTime = mf.ms(dateList[i+1]);
-    const curDaySunEvents = allSunEvents(lat, long, startTime, endTime, ecef);
+    const startLOD = lodLookupTable[i], endLOD = lodLookupTable[i+1];
+    const curDaySunEvents = allSunEvents(lat, long, startLOD, endLOD, ecef);
     sunEvents.push(curDaySunEvents);
 }
 
 const solsticesEquinoxes = getSolstEq(year, timeZone);
 
-const daylengthSvg = generateSvg(sunEvents, "length", lookupTable, solsticesEquinoxes);
+const daylengthSvg = generateSvg(sunEvents, "length", tzLookupTable, solsticesEquinoxes);
 fs.writeFileSync(daylengthFileName, daylengthSvg, "utf8");
 console.log(`File written to ${daylengthFileName}`);
 
-const risesetSvg = generateSvg(sunEvents, "rise-set", lookupTable, solsticesEquinoxes);
+const risesetSvg = generateSvg(sunEvents, "rise-set", tzLookupTable, solsticesEquinoxes);
 fs.writeFileSync(risesetFileName, risesetSvg, "utf8");
 console.log(`File written to ${risesetFileName}`);
 const end = performance.now();

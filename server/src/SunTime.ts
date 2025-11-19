@@ -4,6 +4,7 @@ import {refract} from "./suncalc.js";
 import * as mf from "./mathfuncs.js";
 import { DateTime } from "luxon";
 import {DAY_LENGTH} from "./constants.js";
+import {TimeChange, getOffsetFromTable} from "./lookup-tables.js";
 
 export default class SunTime {
     /** Unix timestamp in milliseconds of this SunTime object. */
@@ -45,12 +46,12 @@ export default class SunTime {
      * inclusive. If the local time is represented as h hours, m minutes, s seconds, and ms milliseconds, then the value returned
      * is equal to 3.6e6*h + 60000*m + 1000*s + ms.
     */
-    timeOfDay(timeZone: string | mf.TimeChange[]): number {
+    timeOfDay(timeZone: string | TimeChange[]): number {
         if (typeof(timeZone) == "string") {
             const dt = this.toDateTime(timeZone);
             return dt.millisecond + 1000*dt.second + 60000*dt.minute + 3600000*dt.hour;
         } else {
-            const offset = mf.getOffsetFromTable(this.time, timeZone);
+            const offset = getOffsetFromTable(this.time, timeZone);
             const adjustedTimestamp = this.time + offset * 60000;
             return mf.mod(adjustedTimestamp, DAY_LENGTH);
         }
