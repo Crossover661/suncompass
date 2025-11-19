@@ -63,14 +63,19 @@ export function equationOfCenter(JC) {
 }
 export function sunAnomaly(JC) { return meanSunAnomaly(JC) + equationOfCenter(JC); }
 /** Distance from sun to earth in kilometers.
- * @param date The timestamp. Can be specified as a Luxon DateTime, a Unix timestamp (if unix = true), or a Julian century (if Unix = false).
+ * @param date The timestamp. Can be specified as a Luxon DateTime, a Unix timestamp (if unix = true), or a Julian century (if unix = false).
  * @param unix If true (and date is a number), date is measured in Unix milliseconds. If false, date is Julian centuries since J2000 epoch.
 */
 export function sunDistance(date, unix = false) {
     if (typeof (date) == "number") {
         if (!unix) {
-            const ecc = eccentricity(date);
-            return (149598023 * (1 - ecc ** 2)) / (1 + ecc * Math.cos(sunAnomaly(date) * degToRad));
+            const U = date / 100;
+            let dist = 1.0001026; // in astronomical units
+            for (let i = 0; i < sunPeriodicTerms.length; i++) {
+                const curRow = sunPeriodicTerms[i];
+                dist += (1e-7 * (curRow[1] * Math.cos(curRow[2] + curRow[3] * U)));
+            }
+            return 149597870.7 * dist; // convert to kilometers
         }
         else {
             return sunDistance(mf.jCentury(date));
