@@ -55,7 +55,3 @@ coordinates 34.42, -119.85 (on the campus of UC Santa Barbara, where I go to col
 
 To create charts for the north pole or south pole, set the coordinates to `89.9999 0` or `-89.9999 0`. Do not set the latitude to 90 
 or -90.
-
-## test.js
-
-Used as a "sandbox" by the developer to test functions defined in the TypeScript files.
