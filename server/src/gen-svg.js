@@ -3,8 +3,8 @@
  * "generateSvg" generates an SVG file showing (from top to bottom) the lengths of day, civil twilight, nautical twilight, astronomical
  * twilight and night for an entire year
  */
-import { convertToMS, isCollinear, toFixedS } from "./mathfuncs.js";
-import { intervalsSvg, lengths, getSolstEq } from "./suncalc.js";
+import * as mf from "./mathfuncs.js";
+import { intervalsSvg, lengths } from "./suncalc.js";
 import { DAY_LENGTH } from "./constants.js";
 import { DateTime } from "luxon";
 const svgClose = "</svg>";
@@ -24,13 +24,13 @@ function svgOpen(width, height) {
  */
 function polygonFromArray(points, fillColor = "none", strokeColor = "none", strokeWidth = 0, precision = 2) {
     const simplifiedPoints = simplifyCollinear(points);
-    const ptsAttr = simplifiedPoints.map(([x, y]) => `${toFixedS(x, precision)},${toFixedS(y, precision)}`).join(" "); // format the "x,y x,y ..." string
+    const ptsAttr = simplifiedPoints.map(([x, y]) => `${mf.toFixedS(x, precision)},${mf.toFixedS(y, precision)}`).join(" "); // format the "x,y x,y ..." string
     return `<polygon points="${ptsAttr}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>\n`;
 }
 /** Generates SVG code for a polyline from an array of points with the specified stroke color, width, and precision (digits after the
  * decimal point in the coordinates). */
 function polylineFromArray(points, color = "#000000", width = 1, precision = 2) {
-    const ptsAttr = points.map(([x, y]) => `${toFixedS(x, precision)},${toFixedS(y, precision)}`).join(" "); // format the "x,y x,y ..." string
+    const ptsAttr = points.map(([x, y]) => `${mf.toFixedS(x, precision)},${mf.toFixedS(y, precision)}`).join(" "); // format the "x,y x,y ..." string
     return `<polyline points="${ptsAttr}" fill="none" stroke="${color}" stroke-width="${width}"/>\n`;
 }
 /** Generates SVG code for a rectangle with the top-left corner at the given x and y cordinates, and the given width, height,
@@ -42,12 +42,12 @@ function rectangleSvg(x, y, width, height, fillColor = "none", strokeColor = "no
  * Text anchor can be "start" (left-aligned), "middle" (centered), or "end" (right-aligned). Alignment baseline can be either
  * "text-before-edge" (top-aligned), "middle" (centered), or "text-after-edge" (bottom-aligned). */
 function textSvg(text, x, y, fontSize, font, textColor, textAnchor, alignmentBaseline, precision = 2) {
-    return `<text x="${toFixedS(x, precision)}" y="${toFixedS(y, precision)}" font-family="${font}" font-size="${fontSize}pt"`
+    return `<text x="${mf.toFixedS(x, precision)}" y="${mf.toFixedS(y, precision)}" font-family="${font}" font-size="${fontSize}pt"`
         + ` text-anchor="${textAnchor}" alignment-baseline="${alignmentBaseline}" fill="${textColor}">${text}</text>\n`;
 }
 /** Generates an SVG line from (x1, y1) to (x2, y2) with the given color and width. */
 function lineSvg(x1, y1, x2, y2, color, width, precision = 2) {
-    return `<line x1="${toFixedS(x1, precision)}" y1="${toFixedS(y1, precision)}" x2="${toFixedS(x2, precision)}" y2="${toFixedS(y2, precision)}"`
+    return `<line x1="${mf.toFixedS(x1, precision)}" y1="${mf.toFixedS(y1, precision)}" x2="${mf.toFixedS(x2, precision)}" y2="${mf.toFixedS(y2, precision)}"`
         + ` stroke="${color}" stroke-width="${width}"/>\n`;
 }
 /** Returns an array of month abbreviations in the given language (represented by a language code, such as "en" for English, "es" for
@@ -74,7 +74,7 @@ function simplifyCollinear(points) {
         const prev = newPoints[newPoints.length - 2];
         const cur = newPoints[newPoints.length - 1];
         const next = points[i];
-        if (isCollinear(prev, cur, next)) {
+        if (mf.isCollinear(prev, cur, next)) {
             newPoints[newPoints.length - 1] = next;
         }
         else {
@@ -208,6 +208,7 @@ function intervalsToPolygon(intervals) {
  * day, night, and each stage of twilight occur.
  * @param events Values of "allSunEvents" for each day of the year.
  * @param type Set to "length" to generate a day/night/twilight length chart, or "rise-set" to generate a chart with times of day.
+ * @param timeZone Time zone, either as an IANA string or a lookup table (see mathfuncs.timeZoneLookupTable)
  * @param solsticesEquinoxes Solstices and equinoxes for the given year, as an array of four DateTimes. They will appear as green lines on the diagram.
  * @param svgWidth Width of the chart (not the entire SVG file) in pixels. Defaults to 1000.
  * @param svgHeight Height of the chart (not the entire SVG file) in pixels. Defaults to 500.
@@ -227,7 +228,7 @@ function intervalsToPolygon(intervals) {
  * The total width of the SVG file is equal to svgWidth + leftPadding + rightPadding. The height is equal to svgHeight + topPadding +
  * bottomPadding.
  */
-export function generateSvg(events, type, svgWidth = 1100, svgHeight = 550, leftPadding = 25, rightPadding = 10, topPadding = 10, bottomPadding = 25, textSize = 11, font = "Arial", textColor = "#000000", backgroundColor = "#ffffff", language = "en", gridInterval = 2, gridlineWidth = 0.5) {
+export function generateSvg(events, type, timeZone, solsticesEquinoxes = [], svgWidth = 1100, svgHeight = 550, leftPadding = 25, rightPadding = 10, topPadding = 10, bottomPadding = 25, textSize = 11, font = "Arial", textColor = "#000000", backgroundColor = "#ffffff", language = "en", gridInterval = 2, gridlineWidth = 0.5) {
     const days = events.length; // 365 days for common years, 366 for leap years
     const gridColor = (type == "moon") ? "#000000" : "#808080"; // gridline color
     /** x-coordinate representing given day */
@@ -262,7 +263,7 @@ export function generateSvg(events, type, svgWidth = 1100, svgHeight = 550, left
             const curDay = [];
             for (const event of evts) {
                 if (event.eventType == "Solar Noon") {
-                    curDay.push(convertToMS(event.time));
+                    curDay.push(event.timeOfDay(timeZone));
                 }
             }
             solarNoons.push(curDay);
@@ -305,7 +306,7 @@ export function generateSvg(events, type, svgWidth = 1100, svgHeight = 550, left
             const curDay = [];
             for (const event of evts) {
                 if (event.eventType == "Solar Midnight") {
-                    curDay.push(convertToMS(event.time));
+                    curDay.push(event.timeOfDay(timeZone));
                 }
             }
             solarMidnights.push(curDay);
@@ -366,7 +367,7 @@ export function generateSvg(events, type, svgWidth = 1100, svgHeight = 550, left
         const nLengths = []; // day + civil + nautical twilight lengths
         const aLengths = []; // day + civil + nautical + astronomical twilight lengths
         for (const e of events) {
-            const dur = lengths(e);
+            const dur = lengths(e, timeZone);
             dLengths.push(dur[0]);
             cLengths.push(dur[1]);
             nLengths.push(dur[2]);
@@ -397,7 +398,7 @@ export function generateSvg(events, type, svgWidth = 1100, svgHeight = 550, left
         const cIntervals = []; // intervals of civil twilight or brighter
         const dIntervals = []; // intervals of daylight
         for (const event of events) {
-            const int = intervalsSvg(event);
+            const int = intervalsSvg(event, timeZone);
             aIntervals.push(int[3]);
             nIntervals.push(int[2]);
             cIntervals.push(int[1]);
@@ -418,15 +419,10 @@ export function generateSvg(events, type, svgWidth = 1100, svgHeight = 550, left
         }
     }
     // draw solstices and equinoxes as green lines
-    if (type != "moon") {
-        const zone = typeof (events[0][0].time.zoneName) == "string" ? events[0][0].time.zoneName : "utc";
-        const year = events[0][0].time.year;
-        const solsticesEquinoxes = getSolstEq(year, zone);
-        for (const date of Object.values(solsticesEquinoxes)) {
-            const newYear = DateTime.fromISO(`${date.year}-01-01`, { zone: date.zone });
-            const x = xCoord(date.diff(newYear, ['days', 'hours']).days + 0.5);
-            svgString += lineSvg(x, topPadding, x, topPadding + svgHeight, "#00c000", 1);
-        }
+    for (const date of Object.values(solsticesEquinoxes)) {
+        const newYear = DateTime.fromISO(`${date.year}-01-01`, { zone: date.zone });
+        const x = xCoord(date.diff(newYear, ['days', 'hours']).days + 0.5);
+        svgString += lineSvg(x, topPadding, x, topPadding + svgHeight, "#00c000", 1);
     }
     // draw y-axis and gridlines
     for (let i = 0; i <= 24; i += gridInterval) {

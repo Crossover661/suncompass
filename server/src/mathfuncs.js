@@ -1,4 +1,5 @@
 const degToRad = Math.PI / 180;
+import { DateTime } from 'luxon';
 import { DAY_LENGTH, earthERadius, earthPRadius, flattening, J2000UTC } from "./constants.js";
 /** Divide x by y, rounding the output to the nearest integer with smaller absolute value. */
 export function intDiv(x, y) {
@@ -309,4 +310,57 @@ export function elevAzimuth(lat, long, ecefO, ecefC) {
     const elev = Math.asin(clamp(U / R)) / degToRad; // elevation above horizon
     const az = mod(Math.atan2(E, N) / degToRad, 360); // degrees clockwise from north
     return [elev, az];
+}
+/** Given a start date and an end date, both with the same IANA time zone identifier, return an array of Luxon DateTimes with
+ * the start of each day within the interval. */
+export function dayStarts(start, end) {
+    if (start.zoneName != end.zoneName) {
+        console.log("Start and end must have same time zone");
+        return [];
+    }
+    const dayStarts = [];
+    let cur = start.startOf("day");
+    while (ms(cur) <= ms(end)) {
+        dayStarts.push(cur);
+        cur = cur.plus({ days: 1 }).startOf("day");
+    }
+    return dayStarts;
+}
+/** Given the value returned by dayStarts, create a "lookup table" showing when the time offsets change during the given period. */
+export function timeZoneLookupTable(dayStarts) {
+    const changeAtStart = (dayStarts[0].offset != dayStarts[0].minus(1).offset);
+    const firstChange = { unix: ms(dayStarts[0]), offset: dayStarts[0].offset, change: changeAtStart };
+    const table = [firstChange];
+    for (let i = 1; i < dayStarts.length; i++) {
+        const prevDay = dayStarts[i - 1], curDay = dayStarts[i];
+        if (prevDay.offset != curDay.offset) {
+            // If the time changes during this day, use binary search to find where it changes.
+            let t0 = ms(prevDay), t1 = ms(curDay);
+            while (t1 - t0 > 1) {
+                const avg = Math.floor((t0 + t1) / 2);
+                const avgTime = DateTime.fromMillis(avg, { zone: curDay.zone });
+                if (avgTime.offset == prevDay.offset) {
+                    t0 = avg;
+                }
+                else {
+                    t1 = avg;
+                }
+            }
+            table.push({ unix: t1, offset: curDay.offset, change: true });
+        }
+    }
+    return table;
+}
+/** Get UTC offset (minutes) from a Unix timestamp and a time zone lookup table (see mathfuncs.timeZoneLookupTable()) */
+export function getOffsetFromTable(unix, table) {
+    let offset = 0;
+    for (const change of table) {
+        if (unix >= change.unix) {
+            offset = change.offset;
+        }
+        else {
+            break;
+        }
+    }
+    return offset;
 }

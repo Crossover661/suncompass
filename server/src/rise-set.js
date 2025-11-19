@@ -67,7 +67,7 @@ function printSunInfo(lat, long, zone, date, ecef) {
         let [r, g, b] = [128, 128, 128];
         if (event.eventType == "Sunrise" || event.eventType == "Sunset") {[r, g, b] = [255, 255, 0];}
         else if (event.solarElevation >= -5/6) {[r, g, b] = [255, 255, 255];}
-        process.stdout.write(`\r${event.toStringFormatted(bold, r, g, b)}\n`);
+        process.stdout.write(`\r${event.toStringFormatted(bold, r, g, b, zone)}\n`);
     }
 
     return 9 + solarEvents.length; // number of lines in output

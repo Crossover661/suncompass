@@ -1,19 +1,19 @@
 /** Formulas derived from "Astronomical Algorithms" by Jean Meeus. */
-import { clamp, mod, jCentury, rotateZ, latLongEcef, elevAzimuth } from "./mathfuncs.js";
+import * as mf from "./mathfuncs.js";
 import { meanSunAnomaly, longNutation, obliquity, gast } from "./suncalc.js";
 import { degToRad, moonPtl, moonPtld } from "./constants.js";
 export function moonMeanLongitude(JC) {
-    return mod(218.3164591 + 481267.88134236 * JC - 0.0013268 * JC ** 2 + JC ** 3 / 538841 - JC ** 4 / 65194000, 360);
+    return mf.mod(218.3164591 + 481267.88134236 * JC - 0.0013268 * JC ** 2 + JC ** 3 / 538841 - JC ** 4 / 65194000, 360);
 }
 export function moonMeanElongation(JC) {
-    return mod(297.8502042 + 445267.1115168 * JC - 0.00163 * JC ** 2 + JC ** 3 / 545868 - JC ** 4 / 113065000, 360);
+    return mf.mod(297.8502042 + 445267.1115168 * JC - 0.00163 * JC ** 2 + JC ** 3 / 545868 - JC ** 4 / 113065000, 360);
 }
 export function moonMeanAnomaly(JC) {
-    return mod(134.9634114 + 477198.8676313 * JC + 0.008997 * JC ** 2 + JC ** 3 / 69699 - JC ** 4 / 14712000, 360);
+    return mf.mod(134.9634114 + 477198.8676313 * JC + 0.008997 * JC ** 2 + JC ** 3 / 69699 - JC ** 4 / 14712000, 360);
 }
 /** Moon argument of latitude */
 export function moonArgLat(JC) {
-    return mod(93.2720993 + 483202.0175273 * JC - 0.0034029 * JC ** 2 - JC ** 3 / 3526000 + JC ** 4 / 863310000, 360);
+    return mf.mod(93.2720993 + 483202.0175273 * JC - 0.0034029 * JC ** 2 - JC ** 3 / 3526000 + JC ** 4 / 863310000, 360);
 }
 /** Sum of all longitude terms in moonPtld (periodic terms for longitude and distance) */
 function l(JC) {
@@ -89,12 +89,12 @@ export function moonLatLong(date, unix = false) {
     if (!unix) {
         let long = moonMeanLongitude(date) + (l(date) + deltaL(date)) / 1e6 + longNutation(date);
         let lat = (b(date) + deltaB(date)) / 1e6;
-        lat = clamp(lat, -90, 90);
-        long = mod(long, 360);
+        lat = mf.clamp(lat, -90, 90);
+        long = mf.mod(long, 360);
         return [lat, long];
     }
     else {
-        return moonLatLong(jCentury(date));
+        return moonLatLong(mf.jCentury(date));
     }
 }
 /** Distance from center of earth to center of moon, in kilometers. */
@@ -103,7 +103,7 @@ export function moonDistance(date, unix = false) {
         return 385000.56 + r(date) / 1000;
     }
     else {
-        return moonDistance(jCentury(date));
+        return moonDistance(mf.jCentury(date));
     }
 }
 /** Returns the rectangular coordinates [x, y, z] in Earth-centered, Earth-fixed coordinates (ECEF) in kilometers. */
@@ -119,7 +119,7 @@ export function moonEcef(unix) {
     const yeci = dist * (cosB * sinL * cosE - sinB * sinE);
     const zeci = dist * (cosB * sinL * sinE + sinB * cosE);
     // convert to ECEF coordinates
-    const rectCoords = rotateZ(xeci, yeci, zeci, -gast(unix));
+    const rectCoords = mf.rotateZ(xeci, yeci, zeci, -gast(unix));
     return rectCoords;
 }
 /** Returns the sublunar point [latitude, longitude], where the moon is directly overhead. */
@@ -127,17 +127,17 @@ export function sublunarPoint(unix) {
     const [xecef, yecef, zecef] = moonEcef(unix);
     const r = Math.hypot(xecef, yecef, zecef);
     const [ux, uy, uz] = [xecef / r, yecef / r, zecef / r];
-    const [lat, lon] = [Math.asin(clamp(uz)), Math.atan2(uy, ux)]; // radians
-    return [lat / degToRad, mod(lon / degToRad + 180, 360) - 180];
+    const [lat, lon] = [Math.asin(mf.clamp(uz)), Math.atan2(uy, ux)]; // radians
+    return [lat / degToRad, mf.mod(lon / degToRad + 180, 360) - 180];
 }
 /** Returns the moon's position: [elevation, azimuth] in degrees. Optionally, the observer's ECEF can be specified in order
  * to avoid repeatedly computing it.
 */
 export function moonPosition(lat, long, unix, ecefO) {
     if (ecefO === undefined) {
-        return elevAzimuth(lat, long, latLongEcef(lat, long), moonEcef(unix));
+        return mf.elevAzimuth(lat, long, mf.latLongEcef(lat, long), moonEcef(unix));
     }
     else {
-        return elevAzimuth(lat, long, ecefO, moonEcef(unix));
+        return mf.elevAzimuth(lat, long, ecefO, moonEcef(unix));
     }
 }

@@ -1,14 +1,15 @@
-import {sunEventsDay, intervals, lengths} from "./suncalc.js";
+import {sunEventsDay, allSunEvents, intervals, lengths, getSolstEq} from "./suncalc.js";
 import {find} from "geo-tz";
 import {generateSvg} from "./gen-svg.js";
 import { DateTime } from "luxon";
 import fs from "fs";
-import { latLongEcef } from "./mathfuncs.js";
+import * as mf from "./mathfuncs.js";
+
+const start = performance.now();
 
 const daylengthFileName = "day-lengths.svg";
 const risesetFileName = "sunrise-sunset.svg";
 
-const start = performance.now();
 const args = process.argv;
 if (args.length != 4 && args.length != 5) {
     console.log("Syntax: node generate-svg.js <lat> <long> [year]");
@@ -25,22 +26,29 @@ else if (Math.abs(long) > 180) {
     process.exit(1);
 }
 const timeZone = find(lat, long)[0];
-const ecef = latLongEcef(lat, long);
+const ecef = mf.latLongEcef(lat, long);
 const year = DateTime.now().setZone(timeZone).year;
 if (args.length == 5) {year = Number(args[4]);}
 
 const sunEvents = [];
-let date = DateTime.fromISO(`${year}-01-01`, {zone: timeZone});
-while (date.year == year) {
-    sunEvents.push(sunEventsDay(lat, long, date, ecef));
-    date = date.plus({days: 1});
+const startDate = DateTime.fromObject({year: year}, {zone: timeZone});
+const endDate = DateTime.fromObject({year: year+1}, {zone: timeZone});
+const dateList = mf.dayStarts(startDate, endDate);
+const lookupTable = mf.timeZoneLookupTable(dateList);
+
+for (let i=0; i<dateList.length-1; i++) {
+    const startTime = mf.ms(dateList[i]), endTime = mf.ms(dateList[i+1]);
+    const curDaySunEvents = allSunEvents(lat, long, startTime, endTime, ecef);
+    sunEvents.push(curDaySunEvents);
 }
 
-const daylengthSvg = generateSvg(sunEvents, "length");
+const solsticesEquinoxes = getSolstEq(year, timeZone);
+
+const daylengthSvg = generateSvg(sunEvents, "length", lookupTable, solsticesEquinoxes);
 fs.writeFileSync(daylengthFileName, daylengthSvg, "utf8");
 console.log(`File written to ${daylengthFileName}`);
 
-const risesetSvg = generateSvg(sunEvents, "rise-set");
+const risesetSvg = generateSvg(sunEvents, "rise-set", lookupTable, solsticesEquinoxes);
 fs.writeFileSync(risesetFileName, risesetSvg, "utf8");
 console.log(`File written to ${risesetFileName}`);
 const end = performance.now();
