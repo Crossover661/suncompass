@@ -1,15 +1,15 @@
-import {sunEventsDay, allSunEvents, intervals, lengths, getSolstEq} from "./suncalc.js";
+import {sunEventsDay, allSunEvents, intervals, lengths, getSolstEq} from "../dist/suncalc.js";
 import {find} from "geo-tz";
-import {generateSvg} from "./gen-svg.js";
+import {generateSvg} from "../dist/gen-svg.js";
 import { DateTime } from "luxon";
 import fs from "fs";
-import * as mf from "./mathfuncs.js";
-import { timeZoneLookupTable, longDistLookupTable } from "./lookup-tables.js";
+import * as mf from "../dist/mathfuncs.js";
+import { timeZoneLookupTable, longDistLookupTable } from "../dist/lookup-tables.js";
 
 const start = performance.now();
 
-const daylengthFileName = "day-lengths.svg";
-const risesetFileName = "sunrise-sunset.svg";
+const daylengthFileName = "./diagrams/day-lengths.svg";
+const risesetFileName = "./diagrams/sunrise-sunset.svg";
 
 const args = process.argv;
 if (args.length != 4 && args.length != 5) {

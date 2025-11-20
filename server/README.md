@@ -1,14 +1,14 @@
 # suncompass/server/src
 
-Contains the astronomical formulas used in Sun Compass. There are four executable JavaScript files, which rely on functions contained
-within other files.
+Contains the astronomical formulas used in Sun Compass. There are four executable JavaScript files (in the scripts folder), which 
+rely on functions contained within other files.
 
 ## rise-set.js
 
 For any place and time on Earth, gives the position of the sun, the distance between the sun and earth, and the times of sunrise, 
 sunset, solar noon, solar midnight, and civil, nautical and astronomical twilight. Usage is as follows:
 
-`node rise-set.js`: Prints a help menu with the syntax and usage of this command.
+`node scripts/rise-set.js`: Prints a help menu with the syntax and usage of this command.
 
 `node rise-set.js <latitude> <longitude>`: Prints the current sun position and distance, and sunrise, sunset and twilight times for 
 today. Coordinates are given in decimal degrees, for example `node rise-set.js 34.05 -118.25` gives data for Los Angeles, California.

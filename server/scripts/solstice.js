@@ -6,9 +6,9 @@
 // "node solstice.js 2025 America/Los_Angeles" returns solstices and equinoxes for 2025 in Pacific Time.
 
 import {DateTime} from "luxon";
-import {subsolarPoint, getSolstEq} from "./suncalc.js";
-import { generateLODProfile } from "./lookup-tables.js";
-import {ms} from "./mathfuncs.js";
+import {subsolarPoint, getSolstEq} from "../dist/suncalc.js";
+import { generateLODProfile } from "../dist/lookup-tables.js";
+import {ms} from "../dist/mathfuncs.js";
 
 let year;
 let zone;

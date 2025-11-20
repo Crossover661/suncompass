@@ -1,9 +1,9 @@
 import { DateTime, Duration } from "luxon";
 import {find} from "geo-tz";
-import * as sc from "./suncalc.js";
-import SunTime from "./SunTime.js";
-import * as mf from "./mathfuncs.js";
-import { generateLODProfile } from "./lookup-tables.js";
+import * as sc from "../dist/suncalc.js";
+import SunTime from "../dist/SunTime.js";
+import * as mf from "../dist/mathfuncs.js";
+import { generateLODProfile } from "../dist/lookup-tables.js";
 
 const args = process.argv;
 let lat, long, zone, date;

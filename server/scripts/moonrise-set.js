@@ -1,7 +1,7 @@
-import * as mc from "./mooncalc.js";
-import {refract, getSolstEq} from "./suncalc.js"
+import * as mc from "../dist/mooncalc.js";
+import {refract, getSolstEq} from "../dist/suncalc.js"
 import {DateTime} from "luxon";
-import {ms} from "./mathfuncs.js";
+import {ms} from "../dist/mathfuncs.js";
 import {find} from "geo-tz";
 
 const [lat, long] = [34.42, -119.85];

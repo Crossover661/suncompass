@@ -58,13 +58,12 @@ export function sunGeomLong(date: number, unix = false): number {
 /** Formula 45.3, in page 308 of Astronomical Algorithms */
 export function meanSunAnomaly(JC: number): number {return mf.mod(357.5291092 + 35999.0502909*JC - 1.536e-4*JC**2 + JC**3/24490000, 360);}
 export function eccentricity(JC: number): number {return 0.016708617 - 4.2037e-5*JC - 1.236e-7*JC**2;}
+
+/* Unused function
 export function equationOfCenter(JC: number): number {
     const anom = meanSunAnomaly(JC) * degToRad;
-    return (1.9146 - 0.004817*JC - 1.4e-5*JC**2) * Math.sin(anom) +
-    (0.019993 - 1.01e-4*JC) * Math.sin(2*anom) +
-    2.9e-4 * Math.sin(3*anom);
-}
-export function sunAnomaly(JC: number): number {return meanSunAnomaly(JC) + equationOfCenter(JC);}
+    return (1.9146-0.004817*JC-1.4e-5*JC**2)*Math.sin(anom) + (0.019993-1.01e-4*JC)*Math.sin(2*anom) + 2.9e-4*Math.sin(3*anom);
+} */
 
 /** Distance from sun to earth in kilometers. 
  * @param date The timestamp. Can be specified as a Luxon DateTime, a Unix timestamp, or a Julian century.
@@ -529,13 +528,12 @@ export function calcSolstEq(year = DateTime.now().toUTC().year, month: number) {
 /**
  * Reads solstices and equinoxes from the solstices_equinoxes.json file.
  * @param year Year (example: 2025)
- * @param month Month of solstice or equinox. Must be 3, 6, 9, or 12.
  * @param zone Time zone (example: "utc" or "America/Los_Angeles")
  * @returns An object containing solstices and equinoxes for the given year and time zone. The object contains 4 values:
  * marEquinox, junSolstice, sepEquinox, and decSolstice. Each of these is a Luxon DateTime.
  */
 export function getSolstEq(year: number, zone: string = "utc"): SeasonEvents {
-    const data = fs.readFileSync("./solstices_equinoxes.json", "utf8");
+    const data = fs.readFileSync("./data/solstices_equinoxes.json", "utf8");
     const array = JSON.parse(data);
     const n = year - array[0].year;
     if (n < 0 || n >= array.length) {throw new Error("Index out of bounds");}
