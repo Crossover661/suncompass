@@ -48,7 +48,8 @@ function printSunInfo(lat, long, zone, date, ecef) {
     const apparentElev = sc.refract(elev);
     const dist = lod.distance;
 
-    const dayStarts = mf.dayStarts(DateTime.fromObject({year: date.year}), DateTime.fromObject({year: date.year+1}));
+    const dayStarts = mf.dayStarts(DateTime.fromObject({year: date.year}, {zone: date.zone}), 
+    DateTime.fromObject({year: date.year+1}, {zone: date.zone}));
     const timeZoneTable = timeZoneLookupTable(dayStarts);
 
     process.stdout.write(`\r${zone}\n`);
