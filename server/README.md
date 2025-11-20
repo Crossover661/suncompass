@@ -1,4 +1,4 @@
-# suncompass/server/src
+# suncompass/server
 
 Contains the astronomical formulas used in Sun Compass. There are four executable JavaScript files (in the scripts folder), which 
 rely on functions contained within other files.
