@@ -286,7 +286,8 @@ export function declination(longitude: number, obliquity: number): number {
  * @param date Longitude, obliquity, distance (LOD) profile for the given moment.
  * @returns [latitude, longitude] of subsolar point
  */
-export function subsolarPoint(lod: LODProfile): number[] {
+export function subsolarPoint(lod?: LODProfile): number[] {
+    if (lod === undefined) {lod = generateLODProfile(Date.now());}
     const subsolarLat = declination(lod.longitude, lod.obliquity);
     const soltime0 = solarTime(0, lod.unix); // solar time at Greenwich meridian (longitude 0)
     const subsolarLong = mf.mod(-soltime0/4, 360) - 180;
