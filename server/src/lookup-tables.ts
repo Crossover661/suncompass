@@ -1,6 +1,6 @@
 import {DateTime} from "luxon";
 import * as mf from "./mathfuncs.js";
-import {sunTrueLong, sunDistance, obliquity, sunPosition, refract} from "./suncalc.js";
+import {sunTrueLong, sunDistance, obliquity, sunPosition} from "./suncalc.js";
 import { DAY_LENGTH } from "./constants.js";
 
 /** Object representing the change in a location's time zone. 
@@ -111,7 +111,7 @@ export function sunEventString(event: SEvent, zoneTable: TimeChange[], twentyFou
     const eventType = event.type.padStart(14);
     const timeOfDayS = Math.floor(getTimeOfDay(event.unix, zoneTable));
     const timeString = mf.convertToHMS(timeOfDayS, twentyFourHours);
-    const elevStr = refract(event.elev).toFixed(4) + "°";
+    const elevStr = mf.refract(event.elev).toFixed(4) + "°";
     const azStr = (event.azimuth.toFixed(4) + "° " + mf.direction(event.azimuth).padStart(3));
     const eventStr = `${eventType} | ${timeString.padStart(11)} | ${elevStr.padStart(9)} | ${azStr.padStart(13)}`;
 

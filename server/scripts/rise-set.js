@@ -44,7 +44,7 @@ function printSunInfo(lat, long, zone, date, ecef) {
     const lod = generateLODProfile(mf.ms(date));
     const subsolarPoint = sc.subsolarPoint(lod);
     const [elev, az] = sc.sunPosition(lat, long, lod, ecef);
-    const apparentElev = sc.refract(elev);
+    const apparentElev = mf.refract(elev);
     const dist = lod.distance;
 
     const dayStarts = mf.dayStarts(DateTime.fromObject({year: date.year}, {zone: date.zone}), 

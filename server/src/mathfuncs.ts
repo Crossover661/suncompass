@@ -15,6 +15,14 @@ function fractionalYear(t: number) {
     return t / (365.2425 * 86400 * 1000) + 1970;
 }
 
+/**
+ * Adjusts the given elevation angle (elev) of a celestial object to account for atmospheric refraction.
+ */
+export function refract(elev: number): number {
+    const refraction = (elev <= -5/6) ? -0.0089931/Math.tan(elev*degToRad) : (1.02/Math.tan((elev+10.3/(elev+5.11))*degToRad)+0.001927)/60;
+    return elev + refraction;
+}
+
 /** This function finds the approximate value of ΔT, which is calculated using the formula ΔT = TT - UT1. 
  * 
  * TT is terrestrial time (based on atomic clocks) and UT1 is mean solar time at 0° longitude.

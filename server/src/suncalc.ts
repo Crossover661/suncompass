@@ -313,21 +313,11 @@ export function sunPosition(lat: number, long: number, lod: LODProfile, ecefO?: 
 }
 
 /**
- * The number of degrees by which the sun's apparent elevation increases due to atmospheric refraction.
- * @param elev Solar elevation angle before refraction.
- */
-export function refraction(elev: number): number {
-    /** Formula for elevations greater than -5/6 is from Astronomical Algorithms by Jean Meeus (formula 15.4, page 102). 
-     * For elevations below this, it is smoothed to 0 with a function proportional to the cotangent. */ 
-    if (elev <= -5/6) {return -0.0089931/Math.tan(elev*degToRad);}
-    else {return (1.02 / Math.tan((elev+10.3/(elev+5.11))*degToRad) + 0.001927) / 60;}
-}
-
-/**
  * Adjusts the given solar elevation angle (elev) to account for atmospheric refraction.
  */
 export function refract(elev: number): number {
-    return elev + refraction(elev);
+    const refraction = (elev <= -5/6) ? -0.0089931/Math.tan(elev*degToRad) : (1.02/Math.tan((elev+10.3/(elev+5.11))*degToRad)+0.001927)/60;
+    return elev + refraction;
 }
 
 /** Returns the approximate derivative of the solar elevation angle at a particular time, in degrees per second. */
