@@ -1,7 +1,6 @@
 import { DateTime, Duration } from "luxon";
 import {find} from "geo-tz";
 import * as sc from "../dist/suncalc.js";
-import SunTime from "../dist/SunTime.js";
 import * as mf from "../dist/mathfuncs.js";
 import { generateLODProfile, timeZoneLookupTable, sunEventString } from "../dist/lookup-tables.js";
 

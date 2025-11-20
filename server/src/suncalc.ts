@@ -388,7 +388,7 @@ export function maxAndMin(lat: number, long: number, start: LODProfile, end: LOD
  * @param maxMin Results of maxAndMin() for given day
  * @param startLOD LOD profile for beginning of day
  * @param endLOD LOD profile for beginning of next day
- * @returns SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for the type of dawn/sunrise.
+ * @returns SEvent object, which includes a DateTime, the sun's elevation & azimuth and a tag for the type of dawn/sunrise.
  */
 export function dawn(lat: number, long: number, angle: number, type: string, ecef: number[], maxMin: number[], 
     startLOD: LODProfile, endLOD: LODProfile
@@ -420,7 +420,7 @@ export function dawn(lat: number, long: number, angle: number, type: string, ece
  * @param type "Sunset", "Civil Dusk", "Nautical Dusk", "Astro Dusk"
  * @param ecef Observer's ECEF
  * @param maxMin Results of maxAndMin() for given day
- * @returns SunTime object, which includes a DateTime, the sun's elevation & azimuth and a tag for the type of dusk/sunset.
+ * @returns SEvent object, which includes a DateTime, the sun's elevation & azimuth and a tag for the type of dusk/sunset.
  */
 export function dusk(lat: number, long: number, angle: number, type: string, ecef: number[], maxMin: number[],
     startLOD: LODProfile, endLOD: LODProfile

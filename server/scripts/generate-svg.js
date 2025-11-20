@@ -8,12 +8,9 @@ import { timeZoneLookupTable, longDistLookupTable } from "../dist/lookup-tables.
 
 const start = performance.now();
 
-const daylengthFileName = "./diagrams/day-lengths.svg";
-const risesetFileName = "./diagrams/sunrise-sunset.svg";
-
 const args = process.argv;
-if (args.length != 4 && args.length != 5) {
-    console.log("Syntax: node generate-svg.js <lat> <long> [year]");
+if (args.length < 4 || args.length > 6) {
+    console.log("Syntax: node generate-svg.js <lat> <long> [year] [location-name]");
     process.exit(1);
 }
 
@@ -30,6 +27,9 @@ const timeZone = find(lat, long)[0];
 const ecef = mf.latLongEcef(lat, long);
 const year = DateTime.now().setZone(timeZone).year;
 if (args.length == 5) {year = Number(args[4]);}
+
+const daylengthFileName = (args.length == 6) ? `./diagrams/${args[5]}-day-lengths-${year}.svg` : `./diagrams/day-lengths.svg`;
+const risesetFileName = (args.length == 6) ? `./diagrams/${args[5]}-sunrise-sunset-${year}.svg` : `./diagrams/sunrise-sunset.svg`;
 
 const sunEvents = [];
 const startDate = DateTime.fromObject({year: year}, {zone: timeZone});
