@@ -301,7 +301,7 @@ export function subsolarPoint(lod?: LODProfile): number[] {
  * @param lod Longitude, obliquity, distance (LOD) profile.
  * @param ecefO Observer's ECEF (optional)
  * @returns Array: [elevation, azimuth]. Elevation is in degrees above horizon, azimuth is degrees clockwise from north
- * Solar elevation is not refracted. To find the solar elevation angle adjusted for atmospheric refraction, use refract(sunPosition[0])
+ * Solar elevation is not refracted. To find the solar elevation angle adjusted for atmospheric refraction, use mf.refract(sunPosition[0])
  */
 export function sunPosition(lat: number, long: number, lod: LODProfile, ecefO?: number[]): number[] {
     const [sunLat, sunLong] = subsolarPoint(lod);
@@ -310,14 +310,6 @@ export function sunPosition(lat: number, long: number, lod: LODProfile, ecefO?: 
     the ellipsoid. Subsolar point is where the surface normal intersects the sun. */
     if (ecefO === undefined) {return mf.elevAzimuth(lat, long, mf.latLongEcef(lat, long), sunEcef);}
     else {return mf.elevAzimuth(lat, long, ecefO, sunEcef);}
-}
-
-/**
- * Adjusts the given solar elevation angle (elev) to account for atmospheric refraction.
- */
-export function refract(elev: number): number {
-    const refraction = (elev <= -5/6) ? -0.0089931/Math.tan(elev*degToRad) : (1.02/Math.tan((elev+10.3/(elev+5.11))*degToRad)+0.001927)/60;
-    return elev + refraction;
 }
 
 /** Returns the approximate derivative of the solar elevation angle at a particular time, in degrees per second. */
