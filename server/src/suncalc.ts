@@ -20,8 +20,7 @@ the time zone of a geographic coordinate.
 import * as mf from "./mathfuncs.js";
 import {degToRad, sunPeriodicTerms, DAY_LENGTH} from "./constants.js";
 import * as fs from "fs";
-import SunTime from "./SunTime.js";
-import {TimeChange, LODProfile, generateLODProfile, estimateLOD} from "./lookup-tables.js";
+import {TimeChange, LODProfile, generateLODProfile, estimateLOD, SEvent, getTimeOfDay} from "./lookup-tables.js";
 import {DateTime} from "luxon";
 
 export type SeasonEvents = {marEquinox: DateTime; junSolstice: DateTime; sepEquinox: DateTime; decSolstice: DateTime;};
@@ -204,7 +203,7 @@ export function solarTime(longitude: number, unix: number): number {
  * @param ecef Observer's ECEF coordinates
  * @returns Time(s) of solar noon, along with the sun's position at solar noon.
  */
-export function solarNoon(lat: number, long: number, start: LODProfile, end: LODProfile, ecef: number[]): SunTime[] {
+export function solarNoon(lat: number, long: number, start: LODProfile, end: LODProfile, ecef: number[]): SEvent[] {
     const startT = start.unix, endT = end.unix;
     const st00 = solarTime(long, startT), st24 = solarTime(long, endT);
     const stDiff = mf.mod(st24 - st00 - 720, 1440) + 720;
@@ -219,7 +218,7 @@ export function solarNoon(lat: number, long: number, start: LODProfile, end: LOD
         solarNoon1 += ((720 - solarTime(long, solarNoon1)) * 60000);
         solarNoon1 = Math.floor(mf.clamp(solarNoon1, startT, endT-1));
         const [e1, a1] = sunPosition(lat, long, estimateLOD(solarNoon1,start,end), ecef); // solar elevation/azimuth at solarNoon1
-        return [new SunTime(solarNoon0, e0, a0, "Solar Noon"), new SunTime(solarNoon1, e1, a1, "Solar Noon")];
+        return [{unix:solarNoon0,type:"Solar Noon",elev:e0,azimuth:a0},{unix:solarNoon1,type:"Solar Noon",elev:e1,azimuth:a1}];
     }
     else if (st00 > 720 && st00 < 840 && st24 > 600 && st24 <= 720) { // 0 solar noons in a day
         return [];
@@ -229,7 +228,7 @@ export function solarNoon(lat: number, long: number, start: LODProfile, end: LOD
         solarNoon += ((720 - solarTime(long, solarNoon)) * 60000);
         solarNoon = Math.floor(mf.clamp(solarNoon, startT, endT-1));
         const [e, a] = sunPosition(lat, long, estimateLOD(solarNoon,start,end), ecef);
-        return [new SunTime(solarNoon, e, a, "Solar Noon")];
+        return [{unix: solarNoon, type: "Solar Noon", elev: e, azimuth: a}];
     }
 }
 
@@ -242,7 +241,7 @@ export function solarNoon(lat: number, long: number, start: LODProfile, end: LOD
  * @param ecef Observer's ECEF coordinates
  * @returns Time(s) of solar midnight, along with the sun's position at solar midnight.
  */
-export function solarMidnight(lat: number, long: number, start: LODProfile, end: LODProfile, ecef: number[]): SunTime[] {
+export function solarMidnight(lat: number, long: number, start: LODProfile, end: LODProfile, ecef: number[]): SEvent[] {
     const startT = start.unix, endT = end.unix;
     const st00 = solarTime(long, startT), st24 = solarTime(long, endT);
     const stDiff = mf.mod(st24 - st00 - 720, 1440) + 720;
@@ -258,7 +257,8 @@ export function solarMidnight(lat: number, long: number, start: LODProfile, end:
         solarMidnight1 += ((720-mf.mod(solarTime(long,solarMidnight1)+720,1440))*60000);
         solarMidnight1 = Math.floor(mf.clamp(solarMidnight1, startT, endT-1));
         const [e1, a1] = sunPosition(lat, long, estimateLOD(solarMidnight1,start,end), ecef); // solar elevation/azimuth at solarMidnight1
-        return [new SunTime(solarMidnight0, e0, a0, "Solar Midnight"), new SunTime(solarMidnight1, e1, a1, "Solar Midnight")];
+        return [{unix: solarMidnight0, type: "Solar Midnight", elev: e0, azimuth: a0},
+            {unix: solarMidnight1, type: "Solar Midnight", elev: e1, azimuth: a1}];
     }
     else if (st00 < 120 && st24 > 1320) { // 0 solar midnights in a day
         return [];
@@ -268,7 +268,7 @@ export function solarMidnight(lat: number, long: number, start: LODProfile, end:
         solarMidnight += ((720-mf.mod(solarTime(long,solarMidnight)+720,1440))*60000);
         solarMidnight = Math.floor(mf.clamp(solarMidnight, startT, endT-1));
         const [e, a] = sunPosition(lat, long, estimateLOD(solarMidnight,start,end), ecef);
-        return [new SunTime(solarMidnight, e, a, "Solar Midnight")];
+        return [{unix: solarMidnight, type: "Solar Midnight", elev: e, azimuth: a}];
     }
 }
 
@@ -392,8 +392,7 @@ export function maxAndMin(lat: number, long: number, start: LODProfile, end: LOD
  */
 export function dawn(lat: number, long: number, angle: number, type: string, ecef: number[], maxMin: number[], 
     startLOD: LODProfile, endLOD: LODProfile
-): 
-SunTime[] {
+): SEvent[] {
     const dawnTimes = [];
     for (let i=0; i<maxMin.length-1; i++) {
         let t0 = maxMin[i], t1 = maxMin[i+1];
@@ -406,7 +405,7 @@ SunTime[] {
                 else {t1 = avgLOD.unix;}
             }
             const [elev, az] = sunPosition(lat, long, estimateLOD(t0,startLOD,endLOD), ecef);
-            dawnTimes.push(new SunTime(t0, elev, az, type));
+            dawnTimes.push({unix: t0, type: type, elev: elev, azimuth: az});
         }
     }
     return dawnTimes;
@@ -425,8 +424,7 @@ SunTime[] {
  */
 export function dusk(lat: number, long: number, angle: number, type: string, ecef: number[], maxMin: number[],
     startLOD: LODProfile, endLOD: LODProfile
-): 
-SunTime[] {
+): SEvent[] {
     const duskTimes = [];
     for (let i=0; i<maxMin.length-1; i++) {
         let t0 = maxMin[i], t1 = maxMin[i+1];
@@ -439,7 +437,7 @@ SunTime[] {
                 else {t0 = avgLOD.unix;}
             }
             const [elev, az] = sunPosition(lat, long, estimateLOD(t0,startLOD,endLOD), ecef);
-            duskTimes.push(new SunTime(t0, elev, az, type));
+            duskTimes.push({unix: t0, type: type, elev: elev, azimuth: az});
         }
     }
     return duskTimes;
@@ -481,7 +479,7 @@ export function dayLength(sunEventsYesterday: number[], sunEventsToday: number[]
     return -1; // placeholder
 }
 
-export function allSunEvents(lat: number, long: number, start: LODProfile, end: LODProfile, ecef: number[]): SunTime[] {
+export function allSunEvents(lat: number, long: number, start: LODProfile, end: LODProfile, ecef: number[]): SEvent[] {
     if (ecef === undefined) {ecef = mf.latLongEcef(lat, long);}
     const maxMin = maxAndMin(lat, long, start, end, ecef);
     const midnight = solarMidnight(lat, long, start, end, ecef);
@@ -495,7 +493,7 @@ export function allSunEvents(lat: number, long: number, start: LODProfile, end: 
     const ndusk = nauticalDusk(lat, long, ecef, maxMin, start, end);
     const adusk = astroDusk(lat, long, ecef, maxMin, start, end);
     const events = [...midnight, ...adawn, ...ndawn, ...cdawn, ...rise, ...noon, ...set, ...cdusk, ...ndusk, ...adusk];
-    events.sort((a, b) => a.valueOf() - b.valueOf());
+    events.sort((a, b) => a.unix - b.unix);
     return events;
 }
 
@@ -505,7 +503,7 @@ export function allSunEvents(lat: number, long: number, start: LODProfile, end: 
  * @param date Luxon DateTime (can be any point within the given day)
  * @param ecef Observer's ECEF coordinates
 */
-export function sunEventsDay(lat: number, long: number, date: DateTime, ecef: number[]): SunTime[] {
+export function sunEventsDay(lat: number, long: number, date: DateTime, ecef: number[]): SEvent[] {
     const start = generateLODProfile(mf.ms(date.startOf("day")));
     const end = generateLODProfile(mf.ms(date.plus({days:1}).startOf("day")));
     return allSunEvents(lat, long, start, end, ecef);
@@ -552,16 +550,16 @@ export function getSolstEq(year: number, zone: string = "utc"): SeasonEvents {
  * @param timeZone Time zone of the given location (ex. "America/Los_Angeles") or a time zone lookup table
  * @returns Array with intervals of [day, civil twilight, nautical twilight, astronomical twilight, night].
  */
-export function intervals(sunEvents: SunTime[], timeZone: string | TimeChange[]) {
+export function intervals(sunEvents: SEvent[], timeZone: TimeChange[]) {
     const newSunEvents = []; // sunEvents without solar noon or midnight
     const ints : number[][][] = [[], [], [], [], []]; // intervals of day, civil twilight, nautical twilight, astronomical twilight, and night
 
     for (const event of sunEvents) {
-        if (event.eventType != "Solar Noon" && event.eventType != "Solar Midnight") {newSunEvents.push(event);}
+        if (event.type != "Solar Noon" && event.type != "Solar Midnight") {newSunEvents.push(event);}
     }
 
     if (newSunEvents.length == 0) { // no sunrise, sunset, dawn, or dusk
-        const sunAngle = sunEvents[0].solarElevation;
+        const sunAngle = sunEvents[0].elev;
         if (sunAngle < -18) {return [[], [], [], [], [[0, DAY_LENGTH]]];}
         else if (sunAngle < -12) {return [[], [], [], [[0, DAY_LENGTH]], []];}
         else if (sunAngle < -6) {return [[], [], [[0, DAY_LENGTH]], [], []];}
@@ -569,17 +567,17 @@ export function intervals(sunEvents: SunTime[], timeZone: string | TimeChange[])
         else {return [[[0, DAY_LENGTH]], [], [], [], []];}
     }
     
-    let etype = newSunEvents[0].eventType;
-    if (etype == "Sunset") {ints[0].push([0, newSunEvents[0].timeOfDay(timeZone)]);}
-    else if (etype == "Sunrise" || etype == "Civil Dusk") {ints[1].push([0, newSunEvents[0].timeOfDay(timeZone)]);}
-    else if (etype == "Civil Dawn" || etype == "Nautical Dusk") {ints[2].push([0, newSunEvents[0].timeOfDay(timeZone)]);}
-    else if (etype == "Nautical Dawn" || etype == "Astro Dusk") {ints[3].push([0, newSunEvents[0].timeOfDay(timeZone)]);}
-    else if (etype == "Astro Dawn") {ints[4].push([0, newSunEvents[0].timeOfDay(timeZone)]);}
+    let etype = newSunEvents[0].type;
+    if (etype == "Sunset") {ints[0].push([0, getTimeOfDay(newSunEvents[0].unix, timeZone)]);}
+    else if (etype == "Sunrise" || etype == "Civil Dusk") {ints[1].push([0, getTimeOfDay(newSunEvents[0].unix, timeZone)]);}
+    else if (etype == "Civil Dawn" || etype == "Nautical Dusk") {ints[2].push([0, getTimeOfDay(newSunEvents[0].unix, timeZone)]);}
+    else if (etype == "Nautical Dawn" || etype == "Astro Dusk") {ints[3].push([0, getTimeOfDay(newSunEvents[0].unix, timeZone)]);}
+    else if (etype == "Astro Dawn") {ints[4].push([0, getTimeOfDay(newSunEvents[0].unix, timeZone)]);}
 
     for (let i=0; i<newSunEvents.length-1; i++) {
-        etype = newSunEvents[i+1].eventType;
-        const t0 = newSunEvents[i].timeOfDay(timeZone);
-        const t1 = newSunEvents[i+1].timeOfDay(timeZone);
+        etype = newSunEvents[i+1].type;
+        const t0 = getTimeOfDay(newSunEvents[i].unix, timeZone);
+        const t1 = getTimeOfDay(newSunEvents[i+1].unix, timeZone);
         if (etype == "Sunset") {ints[0].push([t0, t1]);}
         else if (etype == "Sunrise" || etype == "Civil Dusk") {ints[1].push([t0, t1]);}
         else if (etype == "Civil Dawn" || etype == "Nautical Dusk") {ints[2].push([t0, t1]);}
@@ -587,7 +585,7 @@ export function intervals(sunEvents: SunTime[], timeZone: string | TimeChange[])
         else if (etype == "Astro Dawn") {ints[4].push([t0, t1]);}
     }
 
-    const lastTime = newSunEvents[newSunEvents.length-1].timeOfDay(timeZone);
+    const lastTime = getTimeOfDay(newSunEvents[newSunEvents.length-1].unix, timeZone);
     if (etype == "Sunrise") {ints[0].push([lastTime, DAY_LENGTH]);}
     else if (etype == "Civil Dawn" || etype == "Sunset") {ints[1].push([lastTime, DAY_LENGTH]);}
     else if (etype == "Nautical Dawn" || etype == "Civil Dusk") {ints[2].push([lastTime, DAY_LENGTH]);}
@@ -611,15 +609,15 @@ export function intervals(sunEvents: SunTime[], timeZone: string | TimeChange[])
  * 
  * aIntervals: Intervals of astronomical twilight or brighter (sun angle >= -18°).
  */
-export function intervalsSvg(sunEvents: SunTime[], timeZone: string | TimeChange[]) {
+export function intervalsSvg(sunEvents: SEvent[], timeZone: TimeChange[]) {
     const newSunEvents = []; // sunEvents without solar noon or midnight
 
     for (const event of sunEvents) {
-        if (event.eventType != "Solar Noon" && event.eventType != "Solar Midnight") {newSunEvents.push(event);}
+        if (event.type != "Solar Noon" && event.type != "Solar Midnight") {newSunEvents.push(event);}
     }
 
     if (newSunEvents.length == 0) { // no sunrise, sunset, dawn, or dusk
-        const s = sunEvents[0].solarElevation;
+        const s = sunEvents[0].elev;
         if (s < -18) {return [[], [], [], []];}
         else if (s < -12) {return [[], [], [], [[0, DAY_LENGTH]]];}
         else if (s < -6) {return [[], [], [[0, DAY_LENGTH]], [[0, DAY_LENGTH]]];}
@@ -632,8 +630,8 @@ export function intervalsSvg(sunEvents: SunTime[], timeZone: string | TimeChange
     const nIntervals: number[][] = []; // daylight + civil twilight + nautical twilight
     const aIntervals: number[][] = []; // daylight + civil twilight + nautical twilight + astronomical twilight
     
-    let etype = newSunEvents[0].eventType;
-    let ms = newSunEvents[0].timeOfDay(timeZone);
+    let etype = newSunEvents[0].type;
+    let ms = getTimeOfDay(newSunEvents[0].unix, timeZone);
 
     // push the first interval
     if (etype == "Astro Dawn") {
@@ -667,8 +665,8 @@ export function intervalsSvg(sunEvents: SunTime[], timeZone: string | TimeChange
     }
 
     for (let i=1; i<newSunEvents.length; i++) {
-        etype = newSunEvents[i].eventType;
-        ms = newSunEvents[i].timeOfDay(timeZone);
+        etype = newSunEvents[i].type;
+        ms = getTimeOfDay(newSunEvents[i].unix, timeZone);
         if (etype == "Astro Dawn") {aIntervals.push([ms, DAY_LENGTH]);}
         else if (etype == "Nautical Dawn") {nIntervals.push([ms, DAY_LENGTH]);}
         else if (etype == "Civil Dawn") {cIntervals.push([ms, DAY_LENGTH]);}
@@ -692,15 +690,15 @@ export function intervalsSvg(sunEvents: SunTime[], timeZone: string | TimeChange
  * @t2: Day + civil twilight + nautical twilight
  * @t3: Day + civil twilight + nautical twilight + astronomical twilight
  */
-export function lengths(sunEvents: SunTime[], timeZone: string | TimeChange[]) {
+export function lengths(sunEvents: SEvent[], timeZone: TimeChange[]) {
     const newSunEvents = []; // sunEvents without solar noon or midnight
     const durations = [0, 0, 0, 0]; // durations
     for (const event of sunEvents) {
-        if (event.eventType != "Solar Noon" && event.eventType != "Solar Midnight") {newSunEvents.push(event);}
+        if (event.type != "Solar Noon" && event.type != "Solar Midnight") {newSunEvents.push(event);}
     }
 
     if (newSunEvents.length == 0) { // no sunrise, sunset, dawn, or dusk
-        const s = sunEvents[0].solarElevation;
+        const s = sunEvents[0].elev;
         if (s < -18) {return [0, 0, 0, 0];} // night all day
         else if (s < -12) {return [0, 0, 0, DAY_LENGTH];} // astronomical twilight all day
         else if (s < -6) {return [0, 0, DAY_LENGTH, DAY_LENGTH];} // nautical twilight all day
@@ -708,23 +706,23 @@ export function lengths(sunEvents: SunTime[], timeZone: string | TimeChange[]) {
         else {return [DAY_LENGTH, DAY_LENGTH, DAY_LENGTH, DAY_LENGTH];} // daylight all day
     }
 
-    let etype = newSunEvents[0].eventType;
-    let ms = newSunEvents[0].timeOfDay(timeZone);
+    let etype = newSunEvents[0].type;
+    let ms = getTimeOfDay(newSunEvents[0].unix, timeZone);
     if (etype == "Nautical Dawn" || etype == "Astro Dusk") {durations[3] += ms;}
     else if (etype == "Civil Dawn" || etype == "Nautical Dusk") {durations[2] += ms;}
     else if (etype == "Sunrise" || etype == "Civil Dusk") {durations[1] += ms;}
     else if (etype == "Sunset") {durations[0] += ms;}
 
     for (let i=0; i<newSunEvents.length-1; i++) {
-        etype = newSunEvents[i+1].eventType;
-        ms = newSunEvents[i+1].timeOfDay(timeZone) - newSunEvents[i].timeOfDay(timeZone);
+        etype = newSunEvents[i+1].type;
+        ms = getTimeOfDay(newSunEvents[i+1].unix, timeZone) - getTimeOfDay(newSunEvents[i].unix, timeZone);
         if (etype == "Nautical Dawn" || etype == "Astro Dusk") {durations[3] += ms;}
         else if (etype == "Civil Dawn" || etype == "Nautical Dusk") {durations[2] += ms;}
         else if (etype == "Sunrise" || etype == "Civil Dusk") {durations[1] += ms;}
         else if (etype == "Sunset") {durations[0] += ms;}
     }
 
-    ms = DAY_LENGTH - newSunEvents[newSunEvents.length-1].timeOfDay(timeZone);
+    ms = DAY_LENGTH - getTimeOfDay(newSunEvents[newSunEvents.length-1].unix, timeZone);
     if (etype == "Astro Dawn" || etype == "Nautical Dusk") {durations[3] += ms;}
     else if (etype == "Nautical Dawn" || etype == "Civil Dusk") {durations[2] += ms;}
     else if (etype == "Civil Dawn" || etype == "Sunset") {durations[1] += ms;}

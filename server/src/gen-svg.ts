@@ -4,7 +4,7 @@
  * twilight and night for an entire year
  */
 
-import SunTime from "./SunTime.js";
+import {getTimeOfDay, SEvent} from "./lookup-tables.js";
 import * as mf from "./mathfuncs.js";
 import {intervalsSvg, lengths, getSolstEq} from "./suncalc.js";
 import {DAY_LENGTH} from "./constants.js"
@@ -239,9 +239,9 @@ function intervalsToPolygon(intervals: number[][][]): number[][][] {
  * bottomPadding.
  */
 export function generateSvg(
-    events: SunTime[][],
+    events: SEvent[][],
     type: string,
-    timeZone: string | TimeChange[],
+    timeZone: TimeChange[],
     solsticesEquinoxes: DateTime[] = [],
     svgWidth: number = 1100,
     svgHeight: number = 550,
@@ -293,7 +293,7 @@ export function generateSvg(
         for (const evts of events) {
             const curDay: number[] = [];
             for (const event of evts) {
-                if (event.eventType == "Solar Noon") {curDay.push(event.timeOfDay(timeZone));}
+                if (event.type == "Solar Noon") {curDay.push(getTimeOfDay(event.unix, timeZone));}
             }
             solarNoons.push(curDay);
         }
@@ -330,7 +330,7 @@ export function generateSvg(
         for (const evts of events) {
             const curDay: number[] = [];
             for (const event of evts) {
-                if (event.eventType == "Solar Midnight") {curDay.push(event.timeOfDay(timeZone));}
+                if (event.type == "Solar Midnight") {curDay.push(getTimeOfDay(event.unix, timeZone));}
             }
             solarMidnights.push(curDay);
         }

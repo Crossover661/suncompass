@@ -1,6 +1,7 @@
 import {DateTime} from "luxon";
 import * as mf from "./mathfuncs.js";
-import {sunTrueLong, sunDistance, obliquity} from "./suncalc.js";
+import {sunTrueLong, sunDistance, obliquity, sunPosition, refract} from "./suncalc.js";
+import { DAY_LENGTH } from "./constants.js";
 
 /** Object representing the change in a location's time zone. 
  * @param unix the Unix timestamp at which the change occurs.
@@ -16,6 +17,16 @@ export type TimeChange = {unix: number; offset: number; change: boolean};
  * @param distance Sun-earth distance in kilometers.
  */
 export type LODProfile = {unix: number, longitude: number, obliquity: number, distance: number};
+
+/** Object represents an event involving the sun or moon. 
+ * @param unix Unix timestamp in milliseconds.
+ * @param type Event type. Can be "Solar Midnight", "Astro Dawn", "Nautical Dawn", "Civil Dawn", "Sunrise", "Solar Noon", "Sunset",
+ * "Civil Dusk", "Nautical Dusk", "Astro Dusk", "Moonrise", "Moonset", or "Moon Meridian" (i.e. when the moon passes the observer's)
+ * meridian.
+ * @param elev Sun's elevation above the horizon. Not refracted.
+ * @param azimuth Sun's azimuth or compass bearing, in degrees clockwise from north.
+*/
+export type SEvent = {unix: number, type: string, elev: number, azimuth: number}
 
 /** Given the value returned by dayStarts, create a "lookup table" showing when the time offsets change during the given period. */
 export function timeZoneLookupTable(dayStarts: DateTime[]): TimeChange[] {
@@ -74,4 +85,43 @@ export function estimateLOD(unix: number, start: LODProfile, end: LODProfile): L
     const estObliquity = start.obliquity + fraction * diffObliquity;
     const estDistance = start.distance + fraction * diffDistance;
     return {unix: unix, longitude: estLongitude, obliquity: estObliquity, distance: estDistance};
+}
+
+/** Given a Unix timestamp and the time zone (as a lookup table), return the time of day in milliseconds, as a number
+ * between 0 and 86399999 inclusive. If the time is expressed in 24-hour format as h:m:s.ms (where ms is milliseconds),
+ * then the return value is equal to ms + 1000*s + 60000*m + 3600000*h.
+ * 
+ * The return value does not depend on DST changes. For example, 10 am will always return 36000000, even if there was a
+ * DST time change earlier in the day. In these cases, getTimeOfDay() is not the same as "milliseconds since midnight".
+ */
+export function getTimeOfDay(unix: number, zone: TimeChange[]): number {
+    const offset = getOffsetFromTable(unix, zone);
+    return mf.mod(unix + offset * 60000, DAY_LENGTH); // Unix time is in UTC, adding the offset converts to local time zone
+}
+
+/**
+ * Converts the sun event to a string (printable using console.log or process.stdout.write).
+ * @param event The event as an SEvent object, with the Unix timestamp and event type.
+ * @param zoneTable Time zone lookup table.
+ * @param twentyFourHours Whether to print time in 12-hour or 24-hour format.
+ * @returns A string representing the solar event, printable using console.log or process.stdout.write.
+ */
+export function sunEventString(event: SEvent, zoneTable: TimeChange[], twentyFourHours = false) 
+{
+    const eventType = event.type.padStart(14);
+    const timeOfDayS = Math.floor(getTimeOfDay(event.unix, zoneTable));
+    const timeString = mf.convertToHMS(timeOfDayS, twentyFourHours);
+    const elevStr = refract(event.elev).toFixed(4) + "°";
+    const azStr = (event.azimuth.toFixed(4) + "° " + mf.direction(event.azimuth).padStart(3));
+    const eventStr = `${eventType} | ${timeString.padStart(11)} | ${elevStr.padStart(9)} | ${azStr.padStart(13)}`;
+
+    const bold = event.type == "Sunrise" || event.type == "Sunset" || event.type == "Solar Noon";
+    let [r, g, b] = [128, 128, 128];
+    if (event.type == "Sunrise" || event.type == "Sunset") {[r, g, b] = [255, 255, 0];}
+    else if (event.elev >= -5/6) {[r, g, b] = [255, 255, 255];}
+    const colorStr = `\x1b[38;2;${r};${g};${b}m`;
+    const boldStr = "\x1b[1m";
+    const resetStr = "\x1b[0m";
+    if (bold) {return colorStr + boldStr + eventStr + resetStr;}
+    else {return colorStr + eventStr + resetStr}
 }

@@ -265,3 +265,18 @@ export function dayStarts(start: DateTime, end: DateTime): DateTime[] {
     }
     return dayStarts;
 }
+
+/** Convert a time of day in milliseconds to hh:mm:ss in either 12 or 24-hour format. */
+export function convertToHMS(timeOfDay: number, twentyFourHours: boolean) {
+    const timeOfDayS = Math.floor(timeOfDay / 1000);
+    const second = mod(timeOfDayS, 60);
+    const minute = Math.floor(mod(timeOfDayS/60, 60));
+    const hour24 = Math.floor(timeOfDayS/3600);
+    const hour12 = mod(hour24 - 1, 12) + 1;
+    const minString = String(minute).padStart(2, "0");
+    const secString = String(second).padStart(2, "0");
+    const hourString24 = String(hour24).padStart(2, "0");
+    if (twentyFourHours) {return `${hourString24}:${minString}:${secString}`;} // ex: 09:47:29
+    else if (hour24 <= 11) {return `${hour12}:${minString}:${secString} am`;} // ex: 9:47:29 am
+    else {return `${hour12}:${minString}:${secString} pm`;} // ex: 9:47:29 pm
+}

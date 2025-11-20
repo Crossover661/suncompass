@@ -3,7 +3,7 @@ import {find} from "geo-tz";
 import * as sc from "../dist/suncalc.js";
 import SunTime from "../dist/SunTime.js";
 import * as mf from "../dist/mathfuncs.js";
-import { generateLODProfile } from "../dist/lookup-tables.js";
+import { generateLODProfile, timeZoneLookupTable, sunEventString } from "../dist/lookup-tables.js";
 
 const args = process.argv;
 let lat, long, zone, date;
@@ -48,6 +48,9 @@ function printSunInfo(lat, long, zone, date, ecef) {
     const apparentElev = sc.refract(elev);
     const dist = lod.distance;
 
+    const dayStarts = mf.dayStarts(DateTime.fromObject({year: date.year}), DateTime.fromObject({year: date.year+1}));
+    const timeZoneTable = timeZoneLookupTable(dayStarts);
+
     process.stdout.write(`\r${zone}\n`);
     process.stdout.write(`\r${date.toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS)}\n`);
     process.stdout.write(`\rCurrent sun elevation: ${elev.toFixed(4)}° (After refraction: ${apparentElev.toFixed(4)}°)\n`);
@@ -69,7 +72,7 @@ function printSunInfo(lat, long, zone, date, ecef) {
         let [r, g, b] = [128, 128, 128];
         if (event.eventType == "Sunrise" || event.eventType == "Sunset") {[r, g, b] = [255, 255, 0];}
         else if (event.solarElevation >= -5/6) {[r, g, b] = [255, 255, 255];}
-        process.stdout.write(`\r${event.toStringFormatted(bold, r, g, b, zone)}\n`);
+        process.stdout.write(`\r${sunEventString(event, timeZoneTable)}\n`);
     }
 
     return 9 + solarEvents.length; // number of lines in output
