@@ -1,11 +1,11 @@
-import * as mc from "../dist/mooncalc.js";
-import {getSolstEq} from "../dist/suncalc.js"
+import * as mc from "../src/core/mooncalc.ts";
 import {DateTime} from "luxon";
-import * as mf from "../dist/mathfuncs.js";
+import * as mf from "../src/core/mathfuncs.ts";
 import {find} from "geo-tz";
 
 const [lat, long] = [34.42, -119.85];
-const date = DateTime.now().setZone("America/Los_Angeles");
+const zone = find(lat, long)[0];
+const date = DateTime.now().setZone(zone);
 console.log(date.toISO());
 const unix = mf.ms(date);
 const [moonLat, moonLong] = mc.sublunarPoint(unix);

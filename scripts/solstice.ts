@@ -6,21 +6,35 @@
 // "node solstice.js 2025 America/Los_Angeles" returns solstices and equinoxes for 2025 in Pacific Time.
 
 import {DateTime} from "luxon";
-import {subsolarPoint, getSolstEq} from "../dist/suncalc.js";
-import { generateLODProfile } from "../dist/lookup-tables.js";
-import {ms} from "../dist/mathfuncs.js";
+import {subsolarPoint} from "../src/core/suncalc.ts";
+import { generateLODProfile } from "../src/core/lookup-tables.ts";
+import {ms} from "../src/core/mathfuncs.ts";
+import fs from "fs";
+import path from "path";
 
-let year;
-let zone;
+let year: number;
+let zone: string;
+
+type RawSeasonRecord = {year: number; marEquinox: number; junSolstice: number; sepEquinox: number; decSolstice: number;};
+function solsticesEquinoxes(): RawSeasonRecord[] {
+  const jsonPath = path.join("public", "data", "solstices_equinoxes.json");
+  const raw = fs.readFileSync(jsonPath, "utf8");
+  return JSON.parse(raw) as RawSeasonRecord[];
+}
 
 const args = process.argv;
 if (args.length == 2) {year = DateTime.now().year;}
-else {year = args[2];}
+else {year = Number(args[2]);}
 if (args.length <= 3) {zone = "local";}
 else {zone = args[3];}
 
-const obj = getSolstEq(year, zone);
-const [mar, jun, sep, dec] = [obj.marEquinox, obj.junSolstice, obj.sepEquinox, obj.decSolstice];
+const obj = solsticesEquinoxes()[year];
+const [mar, jun, sep, dec] = [
+    DateTime.fromMillis(obj.marEquinox, {zone: zone}), 
+    DateTime.fromMillis(obj.junSolstice, {zone: zone}), 
+    DateTime.fromMillis(obj.sepEquinox, {zone: zone}), 
+    DateTime.fromMillis(obj.decSolstice, {zone: zone})
+];
 const [marSSP, junSSP, sepSSP, decSSP] = [
     subsolarPoint(generateLODProfile(ms(mar))),
     subsolarPoint(generateLODProfile(ms(jun))),

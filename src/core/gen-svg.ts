@@ -4,12 +4,12 @@
  * twilight and night for an entire year
  */
 
-import {getTimeOfDay, SEvent} from "./lookup-tables.js";
-import * as mf from "./mathfuncs.js";
-import {intervalsSvg, lengths, getSolstEq} from "./suncalc.js";
-import {DAY_LENGTH} from "./constants.js"
+import {getTimeOfDay} from "./lookup-tables.ts";
+import * as mf from "./mathfuncs.ts";
+import {intervalsSvg, lengths} from "./suncalc.ts";
+import {DAY_LENGTH} from "./constants.ts";
 import {DateTime} from "luxon";
-import {TimeChange} from "./lookup-tables.js";
+import type {SEvent, TimeChange} from "./lookup-tables.ts";
 
 const svgClose = "</svg>";
 const sunColors = ["#80c0ff", "#0060c0", "#004080", "#002040", "#000000"];
@@ -238,25 +238,43 @@ function intervalsToPolygon(intervals: number[][][]): number[][][] {
  * The total width of the SVG file is equal to svgWidth + leftPadding + rightPadding. The height is equal to svgHeight + topPadding +
  * bottomPadding.
  */
-export function generateSvg(
+export function generateSvg({
+    events,
+    type,
+    timeZone,
+    solsticesEquinoxes,
+    svgWidth = 1100,
+    svgHeight = 550,
+    leftPadding = 25,
+    rightPadding = 10,
+    topPadding = 10,
+    bottomPadding = 25,
+    textSize = 11,
+    font = "Arial",
+    textColor = "#000000",
+    backgroundColor = "#ffffff",
+    language = "en",
+    gridInterval = 2,
+    gridlineWidth = 0.5
+}: {
     events: SEvent[][],
     type: string,
     timeZone: TimeChange[],
-    solsticesEquinoxes: DateTime[] = [],
-    svgWidth: number = 1100,
-    svgHeight: number = 550,
-    leftPadding: number = 25,
-    rightPadding: number = 10,
-    topPadding: number = 10,
-    bottomPadding: number = 25,
-    textSize: number = 11,
-    font: string = "Arial",
-    textColor: string = "#000000",
-    backgroundColor: string = "#ffffff",
-    language: string = "en",
-    gridInterval: number = 2,
-    gridlineWidth: number = 0.5,
-): string
+    solsticesEquinoxes: DateTime[],
+    svgWidth?: number,
+    svgHeight?: number,
+    leftPadding?: number,
+    rightPadding?: number,
+    topPadding?: number,
+    bottomPadding?: number,
+    textSize?: number,
+    font?: string,
+    textColor?: string,
+    backgroundColor?: string,
+    language?: string,
+    gridInterval?: number,
+    gridlineWidth?: number
+}): string
 {
     const days = events.length; // 365 days for common years, 366 for leap years
     const gridColor: string = (type == "moon") ? "#000000" : "#808080"; // gridline color

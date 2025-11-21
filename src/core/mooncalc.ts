@@ -1,9 +1,8 @@
 /** Formulas derived from "Astronomical Algorithms" by Jean Meeus. */
 
-import * as mf from "./mathfuncs.js";
-import {meanSunAnomaly, longNutation, obliquity, gast} from "./suncalc.js";
-import {DateTime} from "luxon";
-import {degToRad, earthERadius, flattening, moonPtl, moonPtld} from "./constants.js";
+import * as mf from "./mathfuncs.ts";
+import {meanSunAnomaly, longNutation, obliquity, gast} from "./suncalc.ts";
+import {degToRad, moonPtl, moonPtld} from "./constants.ts";
 
 export function moonMeanLongitude(JC: number) {
     return mf.mod(218.3164591 + 481267.88134236*JC - 0.0013268*JC**2 + JC**3/538841 - JC**4/65194000, 360);

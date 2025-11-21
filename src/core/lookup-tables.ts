@@ -1,7 +1,7 @@
 import {DateTime} from "luxon";
-import * as mf from "./mathfuncs.js";
-import {sunTrueLong, sunDistance, obliquity, sunPosition} from "./suncalc.js";
-import { DAY_LENGTH } from "./constants.js";
+import * as mf from "./mathfuncs.ts";
+import {sunTrueLong, sunDistance, obliquity} from "./suncalc.ts";
+import { DAY_LENGTH } from "./constants.ts";
 
 /** Object representing the change in a location's time zone. 
  * @param unix the Unix timestamp at which the change occurs.
@@ -26,7 +26,7 @@ export type LODProfile = {unix: number, longitude: number, obliquity: number, di
  * @param elev Sun's elevation above the horizon. Not refracted.
  * @param azimuth Sun's azimuth or compass bearing, in degrees clockwise from north.
 */
-export type SEvent = {unix: number, type: string, elev: number, azimuth: number}
+export type SEvent = {unix: number, type: string, elev: number, azimuth: number};
 
 /** Given the value returned by dayStarts, create a "lookup table" showing when the time offsets change during the given period. */
 export function timeZoneLookupTable(dayStarts: DateTime[]): TimeChange[] {

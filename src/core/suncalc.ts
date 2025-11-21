@@ -17,10 +17,10 @@ durations, conversion between different time zones, and complexities such as day
 the time zone of a geographic coordinate.
 */
 
-import * as mf from "./mathfuncs.js";
-import {degToRad, sunPeriodicTerms, DAY_LENGTH} from "./constants.js";
-import * as fs from "fs";
-import {TimeChange, LODProfile, generateLODProfile, estimateLOD, SEvent, getTimeOfDay} from "./lookup-tables.js";
+import * as mf from "./mathfuncs.ts";
+import {degToRad, sunPeriodicTerms, DAY_LENGTH} from "./constants.ts";
+import {generateLODProfile, estimateLOD, getTimeOfDay} from "./lookup-tables.ts";
+import type {TimeChange, LODProfile, SEvent} from "./lookup-tables.ts";
 import {DateTime} from "luxon";
 
 export type SeasonEvents = {marEquinox: DateTime; junSolstice: DateTime; sepEquinox: DateTime; decSolstice: DateTime;};
@@ -522,25 +522,6 @@ export function calcSolstEq(year = DateTime.now().toUTC().year, month: number) {
         else {(sunTrueLong(avg, true) <= 30*(month-3)) ? t0 = avg : t1 = avg;}
     }
     return t0;
-}
-
-/**
- * Reads solstices and equinoxes from the solstices_equinoxes.json file.
- * @param year Year (example: 2025)
- * @param zone Time zone (example: "utc" or "America/Los_Angeles")
- * @returns An object containing solstices and equinoxes for the given year and time zone. The object contains 4 values:
- * marEquinox, junSolstice, sepEquinox, and decSolstice. Each of these is a Luxon DateTime.
- */
-export function getSolstEq(year: number, zone: string = "utc"): SeasonEvents {
-    const data = fs.readFileSync("./data/solstices_equinoxes.json", "utf8");
-    const array = JSON.parse(data);
-    const n = year - array[0].year;
-    if (n < 0 || n >= array.length) {throw new Error("Index out of bounds");}
-    const me = DateTime.fromMillis(array[n].marEquinox, {zone: zone});
-    const js = DateTime.fromMillis(array[n].junSolstice, {zone: zone});
-    const se = DateTime.fromMillis(array[n].sepEquinox, {zone: zone});
-    const ds = DateTime.fromMillis(array[n].decSolstice, {zone: zone});
-    return {marEquinox: me, junSolstice: js, sepEquinox: se, decSolstice: ds};
 }
 
 /**

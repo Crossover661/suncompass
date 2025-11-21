@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import {DAY_LENGTH, earthERadius, earthPRadius, flattening, J2000UTC, degToRad} from "./constants.js";
+import {DAY_LENGTH, earthERadius, flattening, J2000UTC, degToRad} from "./constants.ts";
 
 /** Divide x by y, rounding the output to the nearest integer with smaller absolute value. */
 export function intDiv(x: number, y: number) {
@@ -12,7 +12,7 @@ export function ms(date: DateTime) {return Math.trunc(date.toMillis());}
 
 /** Converts Unix milliseconds to approximate "fractional year" for Delta T calculation. */
 function fractionalYear(t: number) {
-    return t / (365.2425 * 86400 * 1000) + 1970;
+    return t / (365.2425 * DAY_LENGTH) + 1970;
 }
 
 /**
