@@ -59,12 +59,14 @@ function printSunInfo(lat, long, zone, date, ecef) {
     process.stdout.write(`\rSun-earth distance: ${dist.toFixed(0)} km (${(dist/1.609344).toFixed(0)} mi)\n`);
 
     // Print day length
-    const dayLength = -1; // placeholder
-    if (dayLength == -1) {process.stdout.write("\rDay length: undefined\n\r\n");}
-    else {process.stdout.write(`\rDay length: ${Duration.fromObject({seconds: dayLength}).toFormat("h:mm:ss")}\n\r\n`);}
-
-    // Print sunrise, sunset, solar noon, solar midnight, and twilight times
     const solarEvents = sc.sunEventsDay(lat, long, date, ecef);
+    const solarEventsY = sc.sunEventsDay(lat, long, date.minus({days: 1}), ecef);
+    const solarEventsT = sc.sunEventsDay(lat, long, date.plus({days: 1}), ecef);
+    const dayLength = sc.dayLength(solarEventsY, solarEvents, solarEventsT); // placeholder
+    if (dayLength == -1) {process.stdout.write("\rDay length: undefined\n\r\n");}
+    else {process.stdout.write(`\rDay length: ${Duration.fromMillis(1000*Math.round(dayLength/1000)).toFormat("h:mm:ss")}\n\r\n`);}
+
+    // Print sunrise, sunset, twilight, solar noon, and solar midnight times
     process.stdout.write(`\r         Event |        Time | Elevation |       Bearing\n`); // header
     for (const event of solarEvents) {
         let bold = false;

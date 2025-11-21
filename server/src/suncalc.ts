@@ -316,7 +316,7 @@ export function sunPosition(lat: number, long: number, lod: LODProfile, ecefO?: 
 export function derivative(lat: number, long: number, unix: number, startLOD: LODProfile, endLOD: LODProfile, ecef: number[]) {
     const t0 = unix - 500, t1 = unix + 500;
     const LOD0 = estimateLOD(t0, startLOD, endLOD), LOD1 = estimateLOD(t1, startLOD, endLOD);
-    return sunPosition(lat, long, LOD0, ecef)[0] - sunPosition(lat, long, LOD1, ecef)[0];
+    return sunPosition(lat, long, LOD1, ecef)[0] - sunPosition(lat, long, LOD0, ecef)[0];
 }
 
 /**
@@ -452,14 +452,32 @@ export function astroDusk(lat: number, long: number, ecef: number[], maxMin: num
 }
 
 /**
- * Returns day length in seconds (time from sunrise to sunset). If sunset is after midnight or sunrise is before midnight (due to
- * time zone complexities and DST), it returns the number of seconds the sun is up from solar midnight to the next solar midnight.
+ * Returns day length in milliseconds (time from sunrise to sunset). If sunset is after midnight or sunrise is before midnight 
+ * (due to time zone complexities and DST), it returns the length of the continuous period of daylight that includes noon local time.
+ * @param dayStart The Unix time at the start of the day.
  * @param sunEventsYesterday The value of allSunEvents() for yesterday.
  * @param sunEventsToday The value of allSunEvents() for today.
  * @param sunEventsTomorrow The value of allSunEvents() for tomorrow.
  */
-export function dayLength(sunEventsYesterday: number[], sunEventsToday: number[], sunEventsTomorrow: number[]) {
-    return -1; // placeholder
+export function dayLength(dayStart: number, sunEventsYesterday: SEvent[], sunEventsToday: SEvent[], sunEventsTomorrow: SEvent[]) {
+    const rise: SEvent[] = [], set: SEvent[] = [];
+    for (const event of sunEventsToday) {
+        if (event.type == "Sunrise") {rise.push(event);}
+        else if (event.type == "Sunset") {set.push(event);}
+    }
+    if (rise.length == 0 && set.length == 0) {
+        return (sunEventsToday.length == 0 || sunEventsToday[0].elev >= -5/6) ? DAY_LENGTH : 0;
+    }
+    else if (rise.length >= 1 && set.length >= 1 && set.at(-1)!.unix > rise[0].unix) {return set.at(-1)!.unix - rise[0].unix;}
+    else {
+        const riseY: SEvent[] = [], setT: SEvent[] = [];
+        for (const e of sunEventsYesterday) {if (e.type == "Sunrise") {riseY.push(e)};}
+        for (const e of sunEventsTomorrow) {if (e.type == "Sunset") {setT.push(e)};}
+        const MIDDAY = dayStart + DAY_LENGTH/2; // 12 hours after midnight
+        if (setT.length >= 1 && rise.length >= 1 && rise[0].unix < MIDDAY) {return setT[0].unix - rise[0].unix;}
+        else if (riseY.length >= 1 && set.length >= 1 && set[0].unix >= MIDDAY) {return set[0].unix - riseY.at(-1)!.unix;}
+        else {return -1;} // undefined
+    }
 }
 
 export function allSunEvents(lat: number, long: number, start: LODProfile, end: LODProfile, ecef: number[]): SEvent[] {
