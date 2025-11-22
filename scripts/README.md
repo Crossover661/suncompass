@@ -1,6 +1,8 @@
 Contains the astronomical formulas used in Sun Compass. There are five executable TypeScript files (in the scripts folder), which 
 rely on functions contained within other files.
 
+Note: All files MUST be run from the project's root directory, not from the "scripts" directory!
+
 ## rise-set.ts
 
 For any place and time on Earth, gives the position of the sun, the distance between the sun and earth, and the times of sunrise, 
